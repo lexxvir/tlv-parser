@@ -1,32 +1,23 @@
 extern crate tlv_parser;
 
-fn print( input: &tlv_parser::Tlv )
-{
-	print!("tlv = " );
-	for x in input.to_vec().iter() {
-		print!("{:02X} ", *x );
-	}
-	println!("");
-	println!("size = {}", input.len());
-}
-
 fn main() {
 	let tlv = tlv_parser::Tlv {
-		tag: vec![0xA2],
+		tag: vec![0x01],
 		val: tlv_parser::Val( vec![0, 1, 2, 3, 4] )
 	};
 
 	let tlv2 = tlv_parser::Tlv {
-		tag: vec![0xA2],
-		val: tlv_parser::Val( vec![4, 3, 2, 1, 0] )
+		tag: vec![0x02],
+		val: tlv_parser::TlvList( vec![tlv] )
 	};
 
-	print( &tlv );
+	println!( "{}", tlv2 );
 
-	let ctlv = tlv_parser::Tlv {
-		tag: vec![0xA3],
-		val: tlv_parser::TlvList( vec![tlv, tlv2])
+	let tlv3 = tlv_parser::Tlv {
+		tag: vec![0x03],
+		val: tlv_parser::TlvList( vec![tlv2])
 	};
 
-	print( &ctlv );
+	println!( "{}", tlv3 );
+
 }

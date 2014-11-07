@@ -3,16 +3,16 @@
 
 extern crate core;
 
+use core::default::Default;
 use core::iter::{range_step};
+use core::fmt;
 
-#[deriving(Show)]
 pub enum Value {
 	TlvList( Vec<Tlv> ),
 	Val( Vec<u8> ),
 	Nothing
 }
 
-#[deriving(Show)]
 pub struct Tlv {
 	// FIXME: deny explicit assignment
 	pub tag: Vec<u8>,
@@ -64,7 +64,7 @@ impl Value {
 
 	/// Returns bytes array that represents encoded-len
 	/// Note: implements only definite form
-	fn encode_len( &self ) -> Vec<u8> {
+	pub fn encode_len( &self ) -> Vec<u8> {
 		let len = self.len();
 		if len <= 0x7f {
 			return vec![len as u8];
@@ -84,6 +84,31 @@ impl Value {
 		out.insert(0, 0x80 | bytes);
 		return out;
 	}
+}
+
+impl Default for Tlv {
+    fn default() -> Tlv {
+        Tlv::new()
+    }
+}
+
+impl fmt::Show for Tlv {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let _ = self.tag.as_slice().fmt(f);
+		let _ = self.val.encode_len().as_slice().fmt(f);
+		self.val.fmt(f)
+    }
+}
+
+impl fmt::Show for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			&TlvList( ref list ) => { let _ = f.pad("--->"); list.as_slice().fmt(f) },
+			&Val( ref v ) => v.as_slice().fmt(f),
+			_ => ().fmt(f),
+		}
+
+    }
 }
 
 #[test]
