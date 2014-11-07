@@ -38,14 +38,12 @@ impl Tlv {
 		out = out.add( &self.tag );
 		out = out.add( &self.val.encode_len() );
 
-		// FXIME: remove intermediate object
-		let v: Vec<u8> = match self.val {
+		out = out.add( &match self.val {
 				TlvList( ref list ) => list.iter().fold(vec![], |sum, ref x| sum.add(&x.to_vec())),
 				Val( ref v ) => v.clone(),
-				Nothing => vec![],
-			};
+				_ => vec![],
+			});
 
-		out = out.add( &v );
 		return out;
 	}
 
