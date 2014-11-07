@@ -52,7 +52,6 @@ impl Tlv {
 	/// Initializes Tlv object from Vec<u8>
 	pub fn from_vec( &mut self, vec: &Vec<u8> ) {
 	}
-
 }
 
 impl Value {
@@ -65,7 +64,7 @@ impl Value {
 		}
 	}
 
-	/// Returns bytes arrays that represents encoded-len
+	/// Returns bytes array that represents encoded-len
 	/// Note: implements only definite form
 	fn encode_len( &self ) -> Vec<u8> {
 		let len = self.len();
@@ -84,7 +83,7 @@ impl Value {
 		}
 
 		let bytes = out.len() as u8;
-		out.insert(0, 0x80 | bytes );
+		out.insert(0, 0x80 | bytes);
 		return out;
 	}
 }
