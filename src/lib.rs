@@ -22,7 +22,7 @@ pub struct Tlv {
 impl Tlv {
 	/// Creates blank Tlv object
 	pub fn new() -> Tlv {
-		Tlv { tag: vec![], val: Val( vec![] ) }
+		Tlv { tag: vec![], val: Value::Val( vec![] ) }
 	}
 
 	/// Returns size of TLV-string in bytes
@@ -39,8 +39,8 @@ impl Tlv {
 		out = out.add( &self.val.encode_len() );
 
 		out = out.add( &match self.val {
-				TlvList( ref list ) => list.iter().fold(vec![], |sum, ref x| sum.add(&x.to_vec())),
-				Val( ref v ) => v.clone(),
+				Value::TlvList( ref list ) => list.iter().fold(vec![], |sum, ref x| sum.add(&x.to_vec())),
+				Value::Val( ref v ) => v.clone(),
 				_ => vec![],
 			});
 
@@ -56,9 +56,9 @@ impl Value {
 	/// Returns size of value in bytes
 	fn len( &self ) -> uint {
 		match *self {
-			TlvList(ref list) => list.iter().fold(0, |sum, ref x| sum + x.len()),
-			Val(ref v) => v.len(),
-			Nothing => 0,
+			Value::TlvList(ref list) => list.iter().fold(0, |sum, ref x| sum + x.len()),
+			Value::Val(ref v) => v.len(),
+			Value::Nothing => 0,
 		}
 	}
 
@@ -103,8 +103,8 @@ impl fmt::Show for Tlv {
 impl fmt::Show for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			&TlvList( ref list ) => { let _ = f.pad("--->"); list.as_slice().fmt(f) },
-			&Val( ref v ) => v.as_slice().fmt(f),
+			&Value::TlvList( ref list ) => { let _ = f.pad("--->"); list.as_slice().fmt(f) },
+			&Value::Val( ref v ) => v.as_slice().fmt(f),
 			_ => ().fmt(f),
 		}
 
