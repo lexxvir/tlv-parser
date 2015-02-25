@@ -1,11 +1,14 @@
 #![crate_name = "tlv_parser"]
 #![allow(dead_code, unused_variables)]
 
+#![feature(core)]
+
 extern crate core;
 
 use core::default::Default;
 use core::iter::{range_step};
-use core::fmt;
+use core::ops::{Add};
+use core::fmt::{Debug, Pointer};
 
 pub enum Value {
 	TlvList( Vec<Tlv> ),
@@ -26,7 +29,7 @@ impl Tlv {
 	}
 
 	/// Returns size of TLV-string in bytes
-	pub fn len( &self ) -> uint {
+	pub fn len( &self ) -> usize {
 		let val_len = self.val.len();
 		self.tag.len() + self.val.encode_len().len() + val_len
 	}
@@ -54,7 +57,7 @@ impl Tlv {
 
 impl Value {
 	/// Returns size of value in bytes
-	fn len( &self ) -> uint {
+	fn len( &self ) -> usize {
 		match *self {
 			Value::TlvList(ref list) => list.iter().fold(0, |sum, ref x| sum + x.len()),
 			Value::Val(ref v) => v.len(),
@@ -72,7 +75,7 @@ impl Value {
 
 		let mut out: Vec<u8> = vec![];
 
-		for x in range_step(0u, std::uint::BITS, 8u) { // FIXME: use variable-depended size
+		for x in range_step(0us, std::usize::BITS, 8us) { // FIXME: use variable-depended size
 			let b: u8 = (len >> x) as u8;
 			if b == 0 {
 				break;
@@ -92,18 +95,27 @@ impl Default for Tlv {
     }
 }
 
-impl fmt::Show for Tlv {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl core::fmt::Display for Tlv {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 		let _ = self.tag.as_slice().fmt(f);
 		let _ = self.val.encode_len().as_slice().fmt(f);
 		self.val.fmt(f)
     }
 }
 
-impl fmt::Show for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl core::fmt::Display for Vec< Tlv > {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+		for x in self.iter() {
+			let _ = x.fmt(f);
+		}
+		Ok(())
+	}
+}
+
+impl core::fmt::Display for Value {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 		match self {
-			&Value::TlvList( ref list ) => { let _ = f.pad("--->"); list.as_slice().fmt(f) },
+			&Value::TlvList( ref list ) => { let _ = f.pad("--->"); list.fmt(f) },
 			&Value::Val( ref v ) => v.as_slice().fmt(f),
 			_ => ().fmt(f),
 		}
