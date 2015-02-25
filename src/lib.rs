@@ -75,12 +75,12 @@ impl Value {
 
 		let mut out: Vec<u8> = vec![];
 
-		for x in range_step(0us, std::usize::BITS, 8us) { // FIXME: use variable-depended size
+		for x in range_step(24, -8, -8) { // FIXME: use variable-depended size
 			let b: u8 = (len >> x) as u8;
-			if b == 0 {
-				break;
+
+			if b != 0 || out.len() != 0 {
+				out.push( b );
 			}
-			out.insert( 0, b );
 		}
 
 		let bytes = out.len() as u8;
@@ -97,8 +97,16 @@ impl Default for Tlv {
 
 impl core::fmt::Display for Tlv {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-		let _ = self.tag.as_slice().fmt(f);
-		let _ = self.val.encode_len().as_slice().fmt(f);
+		for x in self.tag.iter() {
+			try!(write!(f, "{:02X}", x));
+		}
+		try!(write!(f, " "));
+
+		for x in self.val.encode_len()  {
+			try!(write!(f, "{:02X}", x));
+		}
+		try!(write!(f, " "));
+
 		self.val.fmt(f)
     }
 }
@@ -106,7 +114,7 @@ impl core::fmt::Display for Tlv {
 impl core::fmt::Display for Vec< Tlv > {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 		for x in self.iter() {
-			let _ = x.fmt(f);
+			let _ = try!(x.fmt(f));
 		}
 		Ok(())
 	}
@@ -116,14 +124,31 @@ impl core::fmt::Display for Value {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 		match self {
 			&Value::TlvList( ref list ) => { let _ = f.pad("--->"); list.fmt(f) },
-			&Value::Val( ref v ) => v.as_slice().fmt(f),
+			&Value::Val( ref v ) => { for x in v { try!(write!(f, "{:02X}", x)); } Ok(()) },
 			_ => ().fmt(f),
 		}
 
     }
 }
 
-#[test]
-fn it_works() {
-	println!("test")
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn it_works() {
+		let tlv = Tlv {
+			tag: vec![0x01],
+			val: Value::Val( vec![0] )
+		};
+
+		assert_eq!(format!( "{}", tlv ), "01 01 00" );
+
+		let tlv = Tlv {
+			tag: vec![0x01],
+			val: Value::Val( vec![0; 256] )
+		};
+
+		assert_eq!(format!( "{}", tlv ), "01 820100 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" );
+	}
 }
