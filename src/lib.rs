@@ -1,7 +1,7 @@
 #![crate_name = "tlv_parser"]
 #![allow(dead_code, unused_variables)]
 
-#![feature(core)]
+#![feature(core, collections)]
 
 extern crate core;
 
@@ -38,10 +38,10 @@ impl Tlv {
 	pub fn to_vec( &self ) -> Vec<u8>  {
 		let mut out: Vec<u8> = vec![];
 
-		out = out.add( &self.tag );
-		out = out.add( &self.val.encode_len() );
+		out.push_all( &self.tag );
+		out.push_all( &self.val.encode_len() );
 
-		out = out.add( &match self.val {
+		out.push_all( &match self.val {
 				Value::TlvList( ref list ) => list.iter().fold(vec![], |sum, ref x| sum.add(&x.to_vec())),
 				Value::Val( ref v ) => v.clone(),
 				_ => vec![],
