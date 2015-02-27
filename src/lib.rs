@@ -145,6 +145,20 @@ mod tests {
 		assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00] );
 
 		let tlv = Tlv {
+			tag: vec![0x01],
+			val: Value::Val( vec![0; 127] )
+		};
+
+		assert_eq!(&tlv.to_vec()[0 .. 3], vec![0x01, 0x7F, 0x00] );
+
+		let tlv = Tlv {
+			tag: vec![0x01],
+			val: Value::Val( vec![0; 255] )
+		};
+
+		assert_eq!(&tlv.to_vec()[0 .. 4], vec![0x01, 0x81, 0xFF, 0x00] );
+
+		let tlv = Tlv {
 			tag: vec![0x02],
 			val: Value::Val( vec![0; 256] )
 		};
