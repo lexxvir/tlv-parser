@@ -142,22 +142,20 @@ mod tests {
 			val: Value::Val( vec![0] )
 		};
 
-		assert_eq!(format!( "{}", tlv ), "01 01 00" );
+		assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00] );
 
 		let tlv = Tlv {
 			tag: vec![0x02],
 			val: Value::Val( vec![0; 256] )
 		};
 
-		let s: String = format!( "{}", tlv ).chars().take(9).collect();
-		assert_eq!( s, "02 820100" );
+		assert_eq!(&tlv.to_vec()[0 .. 4], vec![0x02, 0x82, 0x01, 0x00]);
 
 		let tlv = Tlv {
 			tag: vec![0x03],
 			val: Value::Val( vec![0; 0xffff01] )
 		};
 
-		let s: String = format!( "{}", tlv ).chars().take(11).collect();
-		assert_eq!( s, "03 83FFFF01" );
+		assert_eq!(&tlv.to_vec()[0 .. 5], vec![0x03, 0x83, 0xFF, 0xFF, 0x01]);
 	}
 }
