@@ -134,7 +134,6 @@ impl core::fmt::Display for Value {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::iter::repeat;
 
 	#[test]
 	fn it_works() {
@@ -146,11 +145,19 @@ mod tests {
 		assert_eq!(format!( "{}", tlv ), "01 01 00" );
 
 		let tlv = Tlv {
-			tag: vec![0x01],
+			tag: vec![0x02],
 			val: Value::Val( vec![0; 256] )
 		};
 
-		let value: String = repeat("00").take(0x100).collect();
-		assert_eq!( format!( "{}", tlv ), "01 820100 ".to_string() + value.as_slice() );
+		let s: String = format!( "{}", tlv ).chars().take(9).collect();
+		assert_eq!( s, "02 820100" );
+
+		let tlv = Tlv {
+			tag: vec![0x03],
+			val: Value::Val( vec![0; 0xffff01] )
+		};
+
+		let s: String = format!( "{}", tlv ).chars().take(11).collect();
+		assert_eq!( s, "03 83FFFF01" );
 	}
 }
