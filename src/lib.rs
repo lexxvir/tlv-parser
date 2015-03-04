@@ -65,10 +65,10 @@ impl Tlv {
 			return;
 		}
 
-		let first = vec[0]; // FIXME: use iter
-		self.tag.push( first );
+		let mut iter = vec.iter();
 
-		let mut iter = vec.iter().skip(1);
+		let first = *iter.next().unwrap();
+		self.tag.push( first );
 
 		if first & 0x1F == 0x1F {
 			// long form - find the end
