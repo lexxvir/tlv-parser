@@ -15,6 +15,12 @@ pub enum Value {
 	Nothing
 }
 
+/* TODO: use it instead of Vec<u8> for tag
+pub enum Tag {
+	Array( Vec<u8> ),
+	Integer( usize ),
+} */
+
 pub struct Tlv {
 	// FIXME: deny explicit assignment
 	pub tag: Vec<u8>,
@@ -55,6 +61,64 @@ impl Tlv {
 
 	/// Initializes Tlv object from Vec<u8>
 	pub fn from_vec( &mut self, vec: &Vec<u8> ) {
+		if vec.is_empty() {
+			return;
+		}
+
+		let first = vec[0]; // FIXME: use iter
+		self.tag.push( first );
+
+		let mut iter = vec.iter().skip(1);
+
+		if first & 0x1F == 0x1F {
+			// long form - find the end
+			for x in &mut iter {
+				self.tag.push( *x );
+				if x & 0x80 == 0 {
+					break;
+				}
+			}
+		}
+
+		let mut len: usize = match iter.next() {
+			Some( x ) => *x as usize,
+			None => panic!( "invalid tlv" ),
+		};
+
+		if len & 0x80 != 0 {
+			let octet_num = len & 0x7F;
+			if octet_num == 0 {
+				panic!("invalid len!");
+			}
+
+			len = 0;
+
+			for _ in range(0, octet_num) {
+				len = len << 8;
+				len = len | match iter.next() {
+					Some( x ) => *x as usize,
+					None => panic!( "invalid tlv2" ),
+				}
+			}
+		}
+
+
+		let (_, remain) = iter.size_hint();
+		if remain.unwrap() < len {
+			panic!("invalid len 2!");
+		}
+
+		match self.val {
+			Value::Val(ref mut val) => {
+				for _ in range(0, len) {
+					val.push( match iter.next() {
+						Some( x ) => *x,
+						None => panic!( "invalid tlv3" ),
+					});
+				}
+			},
+			_ => panic!("self.val is not vector"),
+		};
 	}
 }
 
@@ -138,7 +202,31 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn it_works() {
+	fn from_vec_test() {
+		// simple two bytes TLV
+		let mut tlv = Tlv::new();
+		let input: Vec<u8> = vec![0x01, 0x02, 0x00, 0x00];
+
+		tlv.from_vec( &input );
+		assert_eq!(tlv.to_vec(), input );
+
+		// TLV with two bytes tag
+		let mut tlv = Tlv::new();
+		let input: Vec<u8> = vec![0x9F, 0x02, 0x02, 0x00, 0x00 ];
+
+		tlv.from_vec( &input );
+		assert_eq!(tlv.to_vec(), input );
+
+		// TLV with two bytes length
+		let mut tlv = Tlv::new();
+		let input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80] + &[0; 0x80];
+
+		tlv.from_vec( &input );
+		assert_eq!(tlv.to_vec(), input );
+	}
+
+	#[test]
+	fn to_vec_test() {
 		let tlv = Tlv {
 			tag: vec![0x01],
 			val: Value::Val( vec![0] )
