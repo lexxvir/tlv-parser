@@ -59,20 +59,14 @@ impl Tlv {
 		return out;
 	}
 
-	/// Initializes Tlv object from Vec<u8>
-	pub fn from_vec( &mut self, vec: &Vec<u8> ) {
-		if vec.is_empty() {
-			return;
-		}
-
-		let mut iter = vec.iter();
-
-		let first = *iter.next().unwrap();
+	/// Initializes Tlv object iterator of Vec<u8>
+	fn from_iter<'a>( &mut self, iter: &mut core::slice::Iter<'a, u8> ) {
+		let first = *(*iter).next().unwrap();
 		self.tag.push( first );
 
 		if first & 0x1F == 0x1F {
 			// long form - find the end
-			for x in &mut iter {
+			for x in &mut *iter {
 				self.tag.push( *x );
 				if x & 0x80 == 0 {
 					break;
@@ -102,23 +96,52 @@ impl Tlv {
 			}
 		}
 
-
 		let (_, remain) = iter.size_hint();
 		if remain.unwrap() < len {
 			panic!("invalid len 2!");
 		}
 
-		match self.val {
-			Value::Val(ref mut val) => {
-				for _ in range(0, len) {
-					val.push( match iter.next() {
-						Some( x ) => *x,
-						None => panic!( "invalid tlv3" ),
-					});
+		if self.tag[0] & 0x20 == 0x20 {
+			// constructed tag
+			self.val = Value::TlvList(vec![]);
+			loop {
+				let (_, remain) = iter.size_hint();
+				if remain.unwrap() == 0 {
+					break;
 				}
-			},
-			_ => panic!("self.val is not vector"),
-		};
+
+				let mut child = Tlv::new();
+				child.from_iter( iter );
+
+                match self.val {
+                    Value::TlvList( ref mut list ) => list.push( child ),
+                    _ => panic!( "invalid tlv4" ),
+                }
+			}
+		}
+		else {
+			match self.val {
+				Value::Val(ref mut val) => {
+					for _ in range(0, len) {
+						val.push( match iter.next() {
+							Some( x ) => *x,
+							None => panic!( "invalid tlv3" ),
+						});
+					}
+				},
+				_ => panic!("self.val is not vector"),
+			};
+		}
+	}
+
+	/// Initializes Tlv object from Vec<u8>
+	pub fn from_vec( &mut self, vec: &Vec<u8> ) {
+		if vec.is_empty() {
+			return;
+		}
+
+		let mut iter = vec.iter();
+		self.from_iter( &mut iter );
 	}
 }
 
