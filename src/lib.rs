@@ -7,7 +7,6 @@ extern crate core;
 
 use core::default::Default;
 use core::iter::{range_step};
-use core::ops::{Add};
 use core::fmt::{Debug, Pointer};
 
 pub enum Value {
@@ -41,11 +40,15 @@ impl Tlv {
 		out.push_all( &self.tag );
 		out.append( &mut self.val.encode_len() );
 
-		out.append( &mut match self.val {
-				Value::TlvList( ref list ) => list.iter().fold(vec![], |sum, ref x| sum.add(&x.to_vec())),
-				Value::Val( ref v ) => v.clone(),
-				_ => vec![],
-			});
+		match self.val {
+			Value::TlvList( ref list ) => {
+				for x in list.iter() {
+					out.append( &mut x.to_vec() );
+				}
+			},
+			Value::Val( ref v ) => out.push_all( v ),
+			_ => (),
+		};
 
 		return out;
 	}
@@ -127,7 +130,6 @@ impl core::fmt::Display for Value {
 			&Value::Val( ref v ) => { for x in v { try!(write!(f, "{:02X}", x)); } Ok(()) },
 			_ => ().fmt(f),
 		}
-
     }
 }
 
