@@ -1,24 +1,19 @@
+#![feature(io)]
+
 extern crate tlv_parser;
+extern crate "rustc-serialize" as serialize;
+
+use std::io::{Read};
+use tlv_parser::*;
+
+use serialize::hex::FromHex;
 
 fn main() {
-	let tlv = tlv_parser::Tlv {
-		tag: vec![0x01],
-		val: tlv_parser::Value::Val( vec![0; 256] )
-	};
+	let mut input = String::new();
+	std::io::stdin().read_to_string( &mut input ).unwrap();
 
-	println!( "{}", tlv );
+	let mut tlv = Tlv::new();
+	tlv.from_vec(&input.from_hex().unwrap());
 
-	let tlv2 = tlv_parser::Tlv {
-		tag: vec![0x22],
-		val: tlv_parser::Value::TlvList( vec![tlv] )
-	};
-
-	println!( "{}", tlv2 );
-
-	let tlv3 = tlv_parser::Tlv {
-		tag: vec![0x23],
-		val: tlv_parser::Value::TlvList( vec![tlv2])
-	};
-
-	println!( "{}", tlv3 );
+	println!("{:}", tlv);
 }

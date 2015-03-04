@@ -3,3 +3,6 @@
 name = "tlv_parser"
 version = "0.0.1"
 authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
+
+[dependencies]
+rustc-serialize = "0.2"
