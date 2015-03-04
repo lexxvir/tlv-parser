@@ -205,6 +205,7 @@ impl core::fmt::Display for Vec< Tlv > {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 		for x in self.iter() {
 			let _ = try!(x.fmt(f));
+			write!(f, ", ");
 		}
 		Ok(())
 	}
