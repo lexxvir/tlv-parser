@@ -61,14 +61,18 @@ impl Tlv {
 
 	/// Initializes Tlv object iterator of Vec<u8>
 	fn from_iter<'a>( &mut self, iter: &mut core::slice::Iter<'a, u8> ) {
-		let first = *(*iter).next().unwrap();
+		let first: u8 = match iter.next() {
+			Some( x ) => *x,
+			None => panic!( "Too short TLV, no data at all" ),
+		};
+
 		self.tag.push( first );
 
 		if first & 0x1F == 0x1F {
 			// long form - find the end
 			for x in &mut *iter {
 				self.tag.push( *x );
-				if x & 0x80 == 0 {
+				if *x & 0x80 == 0 {
 					break;
 				}
 			}
@@ -76,57 +80,49 @@ impl Tlv {
 
 		let mut len: usize = match iter.next() {
 			Some( x ) => *x as usize,
-			None => panic!( "invalid tlv" ),
+			None => panic!( "Too short TLV, only tag exists" ),
 		};
 
 		if len & 0x80 != 0 {
 			let octet_num = len & 0x7F;
-			if octet_num == 0 {
-				panic!("invalid len!");
+			if octet_num == 0 || iter.clone().count() < octet_num {
+				panic!("Invalid length value!");
 			}
 
 			len = 0;
-
-			for _ in range(0, octet_num) {
-				len = len << 8;
-				len = len | match iter.next() {
-					Some( x ) => *x as usize,
-					None => panic!( "invalid tlv2" ),
-				}
+			for x in iter.take(octet_num) {
+				len = (len << 8) | *x as usize;
 			}
 		}
 
-		let (_, remain) = iter.size_hint();
-		if remain.unwrap() < len {
-			panic!("invalid len 2!");
+		let remain = iter.size_hint().1.unwrap();
+		if remain < len {
+			panic!("Too short body, expected {} found {}", len, remain);
 		}
 
 		if self.tag[0] & 0x20 == 0x20 {
 			// constructed tag
 			self.val = Value::TlvList(vec![]);
 			loop {
-				let (_, remain) = iter.size_hint();
-				if remain.unwrap() == 0 {
+				if iter.size_hint().1.unwrap() == 0 {
 					break;
 				}
 
 				let mut child = Tlv::new();
 				child.from_iter( iter );
 
-                match self.val {
-                    Value::TlvList( ref mut list ) => list.push( child ),
-                    _ => panic!( "invalid tlv4" ),
-                }
+                match self.val { Value::TlvList( ref mut list ) => list.push( child ), _ => (), }
 			}
 		}
 		else {
+			self.val = Value::Val(vec![]);
 			match self.val {
 				Value::Val(ref mut val) => {
 					for x in iter.take(len) {
 						val.push( *x );
 					}
 				},
-				_ => panic!("self.val is constructed"),
+				_ => (),
 			};
 		}
 	}
@@ -137,8 +133,7 @@ impl Tlv {
 			return;
 		}
 
-		let mut iter = vec.iter();
-		self.from_iter( &mut iter );
+		self.from_iter( &mut vec.iter() );
 	}
 }
 
