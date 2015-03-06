@@ -122,14 +122,11 @@ impl Tlv {
 		else {
 			match self.val {
 				Value::Val(ref mut val) => {
-					for _ in range(0, len) {
-						val.push( match iter.next() {
-							Some( x ) => *x,
-							None => panic!( "invalid tlv3" ),
-						});
+					for x in iter.take(len) {
+						val.push( *x );
 					}
 				},
-				_ => panic!("self.val is not vector"),
+				_ => panic!("self.val is constructed"),
 			};
 		}
 	}
