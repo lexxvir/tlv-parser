@@ -37,8 +37,7 @@ impl Tlv {
 
 	/// Returns size of TLV-string in bytes
 	pub fn len( &self ) -> usize {
-		let val_len = self.val.len();
-		self.tag.len() + self.val.encode_len().len() + val_len
+		self.tag.len() + self.val.encode_len().len() + self.val.len()
 	}
 
 	/// Returns encoded array of bytes
@@ -49,13 +48,11 @@ impl Tlv {
 		out.append( &mut self.val.encode_len() );
 
 		match self.val {
-			Value::TlvList( ref list ) => {
-				for x in list.iter() {
-					out.append( &mut x.to_vec() );
-				}
+			Value::TlvList( ref list ) => for x in list.iter() {
+				out.append( &mut x.to_vec() );
 			},
 			Value::Val( ref v ) => out.push_all( v ),
-			_ => (),
+			Value::Nothing => (),
 		};
 
 		return out;
