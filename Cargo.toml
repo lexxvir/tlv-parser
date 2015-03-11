@@ -6,3 +6,4 @@ authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
 
 [dependencies]
 rustc-serialize = "0.2"
+byteorder = "*"

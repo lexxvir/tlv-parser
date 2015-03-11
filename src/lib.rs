@@ -4,10 +4,12 @@
 #![feature(core, collections)]
 
 extern crate core;
+extern crate byteorder;
 
 use core::default::Default;
-use core::iter::{range_step};
 use core::fmt::{Debug, Pointer};
+
+use byteorder::{WriterBytesExt, BigEndian};
 
 pub enum Value {
 	TlvList( Vec<Tlv> ),
@@ -147,14 +149,8 @@ impl Value {
 		}
 
 		let mut out: Vec<u8> = vec![];
-
-		for x in range_step(24, -8, -8) { // FIXME: use variable-depended size
-			let b: u8 = (len >> x) as u8;
-
-			if b != 0 || out.len() != 0 {
-				out.push( b );
-			}
-		}
+		out.write_u64::<BigEndian>(len as u64).unwrap();
+		out = out.iter().skip_while(|&x| *x == 0 ).map(|x| *x).collect();
 
 		let bytes = out.len() as u8;
 		out.insert(0, 0x80 | bytes);
