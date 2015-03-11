@@ -85,7 +85,7 @@ impl Tlv {
 
 		if len & 0x80 != 0 {
 			let octet_num = len & 0x7F;
-			if octet_num == 0 || iter.clone().count() < octet_num {
+			if octet_num == 0 || iter.size_hint().1.unwrap() < octet_num {
 				panic!("Invalid length value!");
 			}
 
@@ -102,28 +102,19 @@ impl Tlv {
 
 		if self.tag[0] & 0x20 == 0x20 {
 			// constructed tag
-			self.val = Value::TlvList(vec![]);
-			loop {
-				if iter.size_hint().1.unwrap() == 0 {
-					break;
-				}
+			let mut children: Vec<Tlv> = vec![];
 
+			while iter.size_hint().1.unwrap() != 0 {
 				let mut child = Tlv::new();
 				child.from_iter( iter );
-
-                match self.val { Value::TlvList( ref mut list ) => list.push( child ), _ => (), }
+                children.push( child );
 			}
+
+			self.val = Value::TlvList(children);
 		}
 		else {
-			self.val = Value::Val(vec![]);
-			match self.val {
-				Value::Val(ref mut val) => {
-					for x in iter.take(len) {
-						val.push( *x );
-					}
-				},
-				_ => (),
-			};
+			let val: Vec<u8> = iter.take(len).map(|x| *x).collect();
+			self.val = Value::Val(val);
 		}
 	}
 
