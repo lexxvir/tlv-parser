@@ -1,5 +1,4 @@
 #![crate_name = "tlv_parser"]
-#![allow(dead_code, unused_variables)]
 
 #![feature(core, collections)]
 
@@ -88,6 +87,10 @@ impl Tlv {
 				panic!("Invalid length value!");
 			}
 
+			// FIXME: try to use byteorder
+			//let vec_len: Vec<u8> = iter.take(octet_num).map(|x| *x).collect();
+			//len = <BigEndian as ByteOrder>::read_u32(&vec_len) as usize;
+
 			len = 0;
 			for x in iter.take(octet_num) {
 				len = (len << 8) | *x as usize;
@@ -163,35 +166,60 @@ impl Default for Tlv {
 
 impl core::fmt::Display for Tlv {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+		try!(write!(f, "tag="));
 		for x in self.tag.iter() {
 			try!(write!(f, "{:02X}", x));
 		}
-		try!(write!(f, " "));
+		try!(write!(f, ","));
 
-		for x in self.val.encode_len()  {
-			try!(write!(f, "{:02X}", x));
+		let mut p = String::new();
+		for _ in range(0, 12 - (self.tag.len() * 2 + 5)) {
+			p.push(' ');
 		}
-		try!(write!(f, " "));
 
-		self.val.fmt(f)
+		try!(f.pad(p.as_slice()));
+		try!(write!(f, "len={},", self.val.len()));
+
+		match self.val {
+			Value::Val( _ ) => {
+				let len = self.val.len();
+				let mut num1 = 1;
+				let mut num2 = 10;
+
+				while len / num2 != 0 {
+					num1 = num1 + 1;
+					num2 = num2 * 10;
+				}
+ 
+				let mut p = String::new();
+				for _ in range(0, 10 - (num1 + 5)) {
+					p.push(' ');
+				}
+				try!(f.pad(p.as_slice()));
+			},
+			_ => try!(f.pad("")),
+		}
+
+		try!(self.val.fmt(f));
+		f.pad("")
     }
-}
-
-impl core::fmt::Display for Vec< Tlv > {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-		for x in self.iter() {
-			let _ = try!(x.fmt(f));
-			try!(write!(f, ", "));
-		}
-		Ok(())
-	}
 }
 
 impl core::fmt::Display for Value {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
 		match self {
-			&Value::TlvList( ref list ) => { let _ = f.pad("--->"); list.fmt(f) },
-			&Value::Val( ref v ) => { for x in v { try!(write!(f, "{:02X}", x)); } Ok(()) },
+			&Value::TlvList( ref list ) => {
+				for x in list.iter() {
+					try!(write!(f, "\n"));
+					try!(x.fmt(f));
+				}
+				Ok(())
+			},
+
+			&Value::Val( ref v ) => {
+				try!(write!(f, "data="));
+				for x in v { try!(write!(f, "{:02X}", x)); } Ok(())
+			},
 			_ => ().fmt(f),
 		}
     }
