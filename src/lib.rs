@@ -8,7 +8,7 @@ extern crate byteorder;
 use core::default::Default;
 use core::fmt::{Debug, Pointer};
 
-use byteorder::{WriterBytesExt, BigEndian};
+use byteorder::{WriteBytesExt, BigEndian};
 
 pub enum Value {
 	TlvList( Vec<Tlv> ),
@@ -173,11 +173,11 @@ impl core::fmt::Display for Tlv {
 		try!(write!(f, ","));
 
 		let mut p = String::new();
-		for _ in range(0, 12 - (self.tag.len() * 2 + 5)) {
+		for _ in (0..(12 - (self.tag.len() * 2 + 5))) {
 			p.push(' ');
 		}
 
-		try!(f.pad(p.as_slice()));
+		try!(f.pad(p.as_ref()));
 		try!(write!(f, "len={},", self.val.len()));
 
 		match self.val {
@@ -192,10 +192,10 @@ impl core::fmt::Display for Tlv {
 				}
  
 				let mut p = String::new();
-				for _ in range(0, 10 - (num1 + 5)) {
+				for _ in (0..10 - (num1 + 5)) {
 					p.push(' ');
 				}
-				try!(f.pad(p.as_slice()));
+				try!(f.pad(p.as_ref()));
 			},
 			_ => try!(f.pad("")),
 		}
@@ -260,34 +260,34 @@ mod tests {
 			val: Value::Val( vec![0] )
 		};
 
-		assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00] );
+		assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00]);
 
 		let tlv = Tlv {
 			tag: vec![0x01],
 			val: Value::Val( vec![0; 127] )
 		};
 
-		assert_eq!(&tlv.to_vec()[0 .. 3], vec![0x01, 0x7F, 0x00] );
+		assert_eq!(&tlv.to_vec()[0 .. 3], [0x01, 0x7F, 0x00]);
 
 		let tlv = Tlv {
 			tag: vec![0x01],
 			val: Value::Val( vec![0; 255] )
 		};
 
-		assert_eq!(&tlv.to_vec()[0 .. 4], vec![0x01, 0x81, 0xFF, 0x00] );
+		assert_eq!(&tlv.to_vec()[0 .. 4], [0x01, 0x81, 0xFF, 0x00]);
 
 		let tlv = Tlv {
 			tag: vec![0x02],
 			val: Value::Val( vec![0; 256] )
 		};
 
-		assert_eq!(&tlv.to_vec()[0 .. 4], vec![0x02, 0x82, 0x01, 0x00]);
+		assert_eq!(&tlv.to_vec()[0 .. 4], [0x02, 0x82, 0x01, 0x00]);
 
 		let tlv = Tlv {
 			tag: vec![0x03],
 			val: Value::Val( vec![0; 0xffff01] )
 		};
 
-		assert_eq!(&tlv.to_vec()[0 .. 5], vec![0x03, 0x83, 0xFF, 0xFF, 0x01]);
+		assert_eq!(&tlv.to_vec()[0 .. 5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
 	}
 }
