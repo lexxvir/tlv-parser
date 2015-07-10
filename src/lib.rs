@@ -1,12 +1,12 @@
 #![crate_name = "tlv_parser"]
 
-#![feature(core, collections)]
+#![feature(append)]
+#![feature(vec_push_all)]
 
-extern crate core;
 extern crate byteorder;
 
-use core::default::Default;
-use core::fmt::{Debug, Pointer};
+use std::default::Default;
+use std::fmt::{Debug, Pointer, Display};
 
 use byteorder::{WriteBytesExt, BigEndian};
 
@@ -58,7 +58,7 @@ impl Tlv {
 	}
 
 	/// Initializes Tlv object iterator of Vec<u8>
-	fn from_iter<'a>( &mut self, iter: &mut core::slice::Iter<'a, u8> ) {
+	fn from_iter<'a>( &mut self, iter: &mut std::slice::Iter<'a, u8> ) {
 		let first: u8 = match iter.next() {
 			Some( x ) => *x,
 			None => panic!( "Too short TLV, no data at all" ),
@@ -164,8 +164,8 @@ impl Default for Tlv {
     }
 }
 
-impl core::fmt::Display for Tlv {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl Display for Tlv {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		try!(write!(f, "tag="));
 		for x in self.tag.iter() {
 			try!(write!(f, "{:02X}", x));
@@ -205,8 +205,8 @@ impl core::fmt::Display for Tlv {
     }
 }
 
-impl core::fmt::Display for Value {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
 			&Value::TlvList( ref list ) => {
 				for x in list.iter() {
@@ -247,7 +247,8 @@ mod tests {
 
 		// TLV with two bytes length
 		let mut tlv = Tlv::new();
-		let input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80] + &[0; 0x80];
+		let mut input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80];
+		input.push_all( &[0; 0x80] );
 
 		tlv.from_vec( &input );
 		assert_eq!(tlv.to_vec(), input );
