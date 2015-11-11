@@ -1,6 +1,5 @@
 #![crate_name = "tlv_parser"]
 
-#![feature(append)]
 #![feature(vec_push_all)]
 
 extern crate byteorder;
@@ -173,7 +172,7 @@ impl Display for Tlv {
 		try!(write!(f, ","));
 
 		let mut p = String::new();
-		for _ in (0..(12 - (self.tag.len() * 2 + 5))) {
+		for _ in 0..(12 - (self.tag.len() * 2 + 5)) {
 			p.push(' ');
 		}
 
@@ -192,7 +191,7 @@ impl Display for Tlv {
 				}
  
 				let mut p = String::new();
-				for _ in (0..10 - (num1 + 5)) {
+				for _ in 0..10 - (num1 + 5) {
 					p.push(' ');
 				}
 				try!(f.pad(p.as_ref()));
