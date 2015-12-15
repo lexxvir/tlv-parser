@@ -1,7 +1,5 @@
 #![crate_name = "tlv_parser"]
 
-#![feature(vec_push_all)]
-
 extern crate byteorder;
 
 use std::default::Default;
@@ -42,14 +40,14 @@ impl Tlv {
 	pub fn to_vec( &self ) -> Vec<u8>  {
 		let mut out: Vec<u8> = vec![];
 
-		out.push_all( &self.tag );
+		out.extend_from_slice( &self.tag );
 		out.append( &mut self.val.encode_len() );
 
 		match self.val {
 			Value::TlvList( ref list ) => for x in list.iter() {
 				out.append( &mut x.to_vec() );
 			},
-			Value::Val( ref v ) => out.push_all( v ),
+			Value::Val( ref v ) => out.extend_from_slice( v ),
 			Value::Nothing => (),
 		};
 
@@ -247,7 +245,7 @@ mod tests {
 		// TLV with two bytes length
 		let mut tlv = Tlv::new();
 		let mut input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80];
-		input.push_all( &[0; 0x80] );
+		input.extend_from_slice( &[0; 0x80] );
 
 		tlv.from_vec( &input );
 		assert_eq!(tlv.to_vec(), input );
