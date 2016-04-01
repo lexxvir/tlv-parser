@@ -1,4 +1,5 @@
 #![crate_name = "tlv_parser"]
+#![feature(question_mark)]
 
 extern crate byteorder;
 
@@ -163,19 +164,19 @@ impl Default for Tlv {
 
 impl Display for Tlv {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		try!(write!(f, "tag="));
+		write!(f, "tag=")?;
 		for x in self.tag.iter() {
-			try!(write!(f, "{:02X}", x));
+			write!(f, "{:02X}", x)?;
 		}
-		try!(write!(f, ","));
+		write!(f, ",")?;
 
 		let mut p = String::new();
 		for _ in 0..(12 - (self.tag.len() * 2 + 5)) {
 			p.push(' ');
 		}
 
-		try!(f.pad(p.as_ref()));
-		try!(write!(f, "len={},", self.val.len()));
+		f.pad(p.as_ref())?;
+		write!(f, "len={},", self.val.len())?;
 
 		match self.val {
 			Value::Val( _ ) => {
@@ -192,12 +193,12 @@ impl Display for Tlv {
 				for _ in 0..10 - (num1 + 5) {
 					p.push(' ');
 				}
-				try!(f.pad(p.as_ref()));
+				f.pad(p.as_ref())?;
 			},
-			_ => try!(f.pad("")),
+			_ => f.pad("")?,
 		}
 
-		try!(self.val.fmt(f));
+		self.val.fmt(f)?;
 		f.pad("")
     }
 }
@@ -207,15 +208,15 @@ impl std::fmt::Display for Value {
 		match self {
 			&Value::TlvList( ref list ) => {
 				for x in list.iter() {
-					try!(write!(f, "\n"));
-					try!(x.fmt(f));
+					write!(f, "\n")?;
+					x.fmt(f)?;
 				}
 				Ok(())
 			},
 
 			&Value::Val( ref v ) => {
-				try!(write!(f, "data="));
-				for x in v { try!(write!(f, "{:02X}", x)); } Ok(())
+				write!(f, "data=")?;
+				for x in v { write!(f, "{:02X}", x)?; } Ok(())
 			},
 			_ => ().fmt(f),
 		}
