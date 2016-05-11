@@ -4,7 +4,7 @@
 extern crate byteorder;
 
 use std::default::Default;
-use std::fmt::{Debug, Pointer, Display};
+use std::fmt::{Debug, Display};
 
 use byteorder::{WriteBytesExt, BigEndian};
 
