@@ -126,7 +126,7 @@ impl Tlv {
 			self.val = Value::TlvList(children);
 		}
 		else {
-			let val: Vec<u8> = iter.take(len).map(|x| *x).collect();
+			let val = iter.take(len).cloned().collect();
 			self.val = Value::Val(val);
 		}
 	}
@@ -161,7 +161,7 @@ impl Value {
 
 		let mut out: Vec<u8> = vec![];
 		out.write_u64::<BigEndian>(len as u64).unwrap();
-		out = out.iter().skip_while(|&x| *x == 0 ).map(|x| *x).collect();
+		out = out.iter().skip_while(|&x| *x == 0 ).cloned().collect();
 
 		let bytes = out.len() as u8;
 		out.insert(0, 0x80 | bytes);
