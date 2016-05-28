@@ -124,12 +124,14 @@ impl Tlv {
 	}
 
 	/// Initializes Tlv object from [u8] slice
-	pub fn from_vec( &mut self, slice: &[u8] ) {
-		if slice.is_empty() {
-			return;
+	pub fn from_vec( slice: &[u8] ) -> Tlv {
+        let mut tlv = Tlv::new();
+
+		if !slice.is_empty() {
+		    tlv.from_iter( &mut slice.iter() );
 		}
 
-		self.from_iter( &mut slice.iter() );
+        tlv
 	}
 }
 
@@ -244,26 +246,17 @@ mod tests {
 	#[test]
 	fn from_vec_test() {
 		// simple two bytes TLV
-		let mut tlv = Tlv::new();
 		let input: Vec<u8> = vec![0x01, 0x02, 0x00, 0x00];
-
-		tlv.from_vec( &input );
-		assert_eq!(tlv.to_vec(), input );
+		assert_eq!(Tlv::from_vec( &input ).to_vec(), input );
 
 		// TLV with two bytes tag
-		let mut tlv = Tlv::new();
 		let input: Vec<u8> = vec![0x9F, 0x02, 0x02, 0x00, 0x00 ];
-
-		tlv.from_vec( &input );
-		assert_eq!(tlv.to_vec(), input );
+		assert_eq!(Tlv::from_vec( &input ).to_vec(), input );
 
 		// TLV with two bytes length
-		let mut tlv = Tlv::new();
 		let mut input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80];
 		input.extend_from_slice( &[0; 0x80] );
-
-		tlv.from_vec( &input );
-		assert_eq!(tlv.to_vec(), input );
+		assert_eq!(Tlv::from_vec( &input ).to_vec(), input );
 	}
 
 	#[test]
