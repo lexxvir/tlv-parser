@@ -39,15 +39,7 @@ impl Tlv {
 
     /// Returns true if TLV-object is empty (len() == 0)
     pub fn is_empty( &self ) -> bool {
-		if !self.tag.is_empty() {
-            return false;
-        }
-        
-        match self.val {
-			Value::TlvList( ref list ) => list.is_empty(),
-			Value::Val( ref v ) => v.is_empty(),
-			Value::Nothing => true,
-        }
+		self.tag.is_empty() && self.val.is_empty()
     }
 
 	/// Returns encoded array of bytes
@@ -150,6 +142,15 @@ impl Value {
 			Value::Nothing => 0,
 		}
 	}
+
+    /// Returns true if Value is empty (len() == 0)
+    pub fn is_empty( &self ) -> bool {
+        match *self {
+			Value::TlvList( ref list ) => list.is_empty(),
+			Value::Val( ref v ) => v.is_empty(),
+			Value::Nothing => true,
+        }
+    }
 
 	/// Returns bytes array that represents encoded-len
 	/// Note: implements only definite form
