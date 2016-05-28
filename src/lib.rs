@@ -52,7 +52,7 @@ impl Tlv {
 			Value::Nothing => (),
 		};
 
-		return out;
+		out
 	}
 
 	/// Initializes Tlv object iterator of Vec<u8>
@@ -152,7 +152,7 @@ impl Value {
 
 		let bytes = out.len() as u8;
 		out.insert(0, 0x80 | bytes);
-		return out;
+		out
 	}
 }
 
@@ -165,7 +165,7 @@ impl Default for Tlv {
 impl Display for Tlv {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		write!(f, "tag=")?;
-		for x in self.tag.iter() {
+		for x in &self.tag {
 			write!(f, "{:02X}", x)?;
 		}
 		write!(f, ",")?;
@@ -185,8 +185,8 @@ impl Display for Tlv {
 				let mut num2 = 10;
 
 				while len / num2 != 0 {
-					num1 = num1 + 1;
-					num2 = num2 * 10;
+					num1 += 1;
+					num2 *= 10;
 				}
  
 				let mut p = String::new();
@@ -205,8 +205,8 @@ impl Display for Tlv {
 
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		match self {
-			&Value::TlvList( ref list ) => {
+		match *self {
+			Value::TlvList( ref list ) => {
 				for x in list.iter() {
 					write!(f, "\n")?;
 					x.fmt(f)?;
@@ -214,7 +214,7 @@ impl std::fmt::Display for Value {
 				Ok(())
 			},
 
-			&Value::Val( ref v ) => {
+			Value::Val( ref v ) => {
 				write!(f, "data=")?;
 				for x in v { write!(f, "{:02X}", x)?; } Ok(())
 			},
