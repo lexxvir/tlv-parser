@@ -37,6 +37,19 @@ impl Tlv {
 		self.tag.len() + self.val.encode_len().len() + self.val.len()
 	}
 
+    /// Returns true if TLV-object is empty (len() == 0)
+    pub fn is_empty( &self ) -> bool {
+		if !self.tag.is_empty() {
+            return false;
+        }
+        
+        match self.val {
+			Value::TlvList( ref list ) => list.is_empty(),
+			Value::Val( ref v ) => v.is_empty(),
+			Value::Nothing => true,
+        }
+    }
+
 	/// Returns encoded array of bytes
 	pub fn to_vec( &self ) -> Vec<u8>  {
 		let mut out: Vec<u8> = vec![];
@@ -289,4 +302,16 @@ mod tests {
 
 		assert_eq!(&tlv.to_vec()[0 .. 5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
 	}
+
+    #[test]
+    fn is_empty_test() {
+        let tlv = Tlv::new();
+        assert_eq!(tlv.is_empty(), true);
+
+		let tlv = Tlv {
+			tag: vec![0x03],
+            val: Value::Val( vec![] )
+		};
+        assert_eq!(tlv.is_empty(), false);
+    }
 }
