@@ -61,18 +61,19 @@ impl Tlv {
 	}
 
 	/// Initializes Tlv object iterator of Vec<u8>
-	fn from_iter<'a>( &mut self, iter: &mut std::slice::Iter<'a, u8> ) {
+	fn from_iter( iter: &mut std::slice::Iter<u8> ) -> Tlv {
 		let first: u8 = match iter.next() {
 			Some( x ) => *x,
 			None => panic!( "Too short TLV, no data at all" ),
 		};
 
-		self.tag.push( first );
+        let mut tlv = Tlv::new();
+		tlv.tag.push( first );
 
 		if first & 0x1F == 0x1F {
 			// long form - find the end
 			for x in &mut *iter {
-				self.tag.push( *x );
+				tlv.tag.push( *x );
 				if *x & 0x80 == 0 {
 					break;
 				}
@@ -105,33 +106,26 @@ impl Tlv {
 			panic!("Too short body, expected {} found {}", len, remain);
 		}
 
-		if self.tag[0] & 0x20 == 0x20 {
-			// constructed tag
-			let mut children: Vec<Tlv> = vec![];
+		if tlv.tag[0] & 0x20 == 0x20 { // constructed tag
+			tlv.val = Value::TlvList(vec![]);
 
-			while iter.size_hint().1.unwrap() != 0 {
-				let mut child = Tlv::new();
-				child.from_iter( iter );
-                children.push( child );
-			}
-
-			self.val = Value::TlvList(children);
+            if let Value::TlvList(ref mut children) = tlv.val {
+                while iter.size_hint().1.unwrap() != 0 {
+                    children.push( Tlv::from_iter(iter) );
+                }
+            }
 		}
 		else {
 			let val = iter.take(len).cloned().collect();
-			self.val = Value::Val(val);
+			tlv.val = Value::Val(val);
 		}
+
+        tlv
 	}
 
 	/// Initializes Tlv object from [u8] slice
 	pub fn from_vec( slice: &[u8] ) -> Tlv {
-        let mut tlv = Tlv::new();
-
-		if !slice.is_empty() {
-		    tlv.from_iter( &mut slice.iter() );
-		}
-
-        tlv
+		if slice.is_empty() { Tlv::new() } else { Tlv::from_iter( &mut slice.iter() ) }
 	}
 }
 
