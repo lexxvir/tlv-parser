@@ -123,13 +123,13 @@ impl Tlv {
 		}
 	}
 
-	/// Initializes Tlv object from Vec<u8>
-	pub fn from_vec( &mut self, vec: &Vec<u8> ) {
-		if vec.is_empty() {
+	/// Initializes Tlv object from [u8] slice
+	pub fn from_vec( &mut self, slice: &[u8] ) {
+		if slice.is_empty() {
 			return;
 		}
 
-		self.from_iter( &mut vec.iter() );
+		self.from_iter( &mut slice.iter() );
 	}
 }
 
