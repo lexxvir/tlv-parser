@@ -11,7 +11,7 @@ mod errors;
 use std::default::Default;
 use std::fmt::{Debug, Display};
 
-use byteorder::{WriteBytesExt, BigEndian};
+use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
 
 use errors::{Error};
 
@@ -98,14 +98,8 @@ impl Tlv {
                 return Err(errors::ErrorKind::InvalidLength.into());
 			}
 
-			// FIXME: try to use byteorder
-			//let vec_len: Vec<u8> = iter.take(octet_num).map(|x| *x).collect();
-			//len = <BigEndian as ByteOrder>::read_u32(&vec_len) as usize;
-
-			len = 0;
-			for x in iter.take(octet_num) {
-				len = (len << 8) | *x as usize;
-			}
+			let tlv_len: Vec<u8> = iter.take(octet_num).map(|x| *x).collect();
+			len = BigEndian::read_uint(&tlv_len, octet_num) as usize;
 		}
 
 		let remain = iter.size_hint().1.unwrap();
