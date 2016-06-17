@@ -3,10 +3,17 @@
 
 extern crate byteorder;
 
+#[macro_use]
+extern crate error_chain;
+
+mod errors;
+
 use std::default::Default;
 use std::fmt::{Debug, Display};
 
 use byteorder::{WriteBytesExt, BigEndian};
+
+use errors::{Error};
 
 pub enum Value {
 	TlvList( Vec<Tlv> ),
@@ -61,10 +68,10 @@ impl Tlv {
 	}
 
 	/// Initializes Tlv object iterator of Vec<u8>
-	fn from_iter( iter: &mut std::slice::Iter<u8> ) -> Tlv {
+	fn from_iter( iter: &mut std::slice::Iter<u8> ) -> Result<Tlv, Error> {
 		let first: u8 = match iter.next() {
 			Some( x ) => *x,
-			None => panic!( "Too short TLV, no data at all" ),
+			None => return Ok( Tlv::new() ),
 		};
 
         let mut tlv = Tlv::new();
@@ -82,13 +89,13 @@ impl Tlv {
 
 		let mut len: usize = match iter.next() {
 			Some( x ) => *x as usize,
-			None => panic!( "Too short TLV, only tag exists" ),
+			None => return Err(errors::ErrorKind::TruncatedTlv.into()),
 		};
 
 		if len & 0x80 != 0 {
 			let octet_num = len & 0x7F;
 			if octet_num == 0 || iter.size_hint().1.unwrap() < octet_num {
-				panic!("Invalid length value!");
+                return Err(errors::ErrorKind::InvalidLength.into());
 			}
 
 			// FIXME: try to use byteorder
@@ -103,7 +110,7 @@ impl Tlv {
 
 		let remain = iter.size_hint().1.unwrap();
 		if remain < len {
-			panic!("Too short body, expected {} found {}", len, remain);
+            return Err(errors::ErrorKind::TooShortBody(len, remain).into());
 		}
 
 		if tlv.tag[0] & 0x20 == 0x20 { // constructed tag
@@ -111,7 +118,7 @@ impl Tlv {
 
             if let Value::TlvList(ref mut children) = tlv.val {
                 while iter.size_hint().1.unwrap() != 0 {
-                    children.push( Tlv::from_iter(iter) );
+                    children.push( Tlv::from_iter(iter)? );
                 }
             }
 		}
@@ -120,12 +127,12 @@ impl Tlv {
 			tlv.val = Value::Val(val);
 		}
 
-        tlv
+        Ok(tlv)
 	}
 
 	/// Initializes Tlv object from [u8] slice
-	pub fn from_vec( slice: &[u8] ) -> Tlv {
-		if slice.is_empty() { Tlv::new() } else { Tlv::from_iter( &mut slice.iter() ) }
+	pub fn from_vec( slice: &[u8] ) -> Result<Tlv, Error> {
+        Tlv::from_iter( &mut slice.iter() )
 	}
 }
 

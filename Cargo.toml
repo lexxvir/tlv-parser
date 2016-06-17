@@ -7,3 +7,4 @@ authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
 [dependencies]
 rustc-serialize = "*"
 byteorder = "*"
+error-chain = "*"
