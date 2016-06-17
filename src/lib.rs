@@ -227,7 +227,17 @@ impl std::fmt::Display for Value {
 
 			Value::Val( ref v ) => {
 				write!(f, "data=")?;
-				for x in v { write!(f, "{:02X}", x)?; } Ok(())
+				for x in v { write!(f, "{:02X}", x)?; }
+                write!(f, " ")?;
+				for x in v {
+                    if *x >= 0x20 && *x <= 0x7f {
+                        write!(f, "{}", *x as char)?;
+                    }
+                    else {
+                        write!(f, ".")?;
+                    }
+                }
+                Ok(())
 			},
 			_ => ().fmt(f),
 		}
