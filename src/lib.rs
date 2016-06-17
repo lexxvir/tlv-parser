@@ -248,16 +248,16 @@ mod tests {
 	fn from_vec_test() {
 		// simple two bytes TLV
 		let input: Vec<u8> = vec![0x01, 0x02, 0x00, 0x00];
-		assert_eq!(Tlv::from_vec( &input ).to_vec(), input );
+		assert_eq!(Tlv::from_vec( &input ).unwrap().to_vec(), input );
 
 		// TLV with two bytes tag
 		let input: Vec<u8> = vec![0x9F, 0x02, 0x02, 0x00, 0x00 ];
-		assert_eq!(Tlv::from_vec( &input ).to_vec(), input );
+		assert_eq!(Tlv::from_vec( &input ).unwrap().to_vec(), input );
 
 		// TLV with two bytes length
 		let mut input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80];
 		input.extend_from_slice( &[0; 0x80] );
-		assert_eq!(Tlv::from_vec( &input ).to_vec(), input );
+		assert_eq!(Tlv::from_vec( &input ).unwrap().to_vec(), input );
 	}
 
 	#[test]
