@@ -111,8 +111,14 @@ impl Tlv {
 			tlv.val = Value::TlvList(vec![]);
 
             if let Value::TlvList(ref mut children) = tlv.val {
-                while iter.size_hint().1.unwrap() != 0 {
-                    children.push( Tlv::from_iter(iter)? );
+                let mut child_len = len;
+
+                // FIXME: make more precise control
+                while iter.size_hint().1.unwrap() != 0 && child_len != 0 {
+                    let child = Tlv::from_iter(iter)?;
+                    child_len -= child.len();
+                    children.push( child );
+
                 }
             }
 		}
