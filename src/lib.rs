@@ -67,26 +67,32 @@ impl Tlv {
 		out
 	}
 
-	/// Initializes Tlv object iterator of Vec<u8>
-	fn from_iter( iter: &mut std::slice::Iter<u8> ) -> Result<Tlv, Error> {
+	/// Reads out tag number
+	fn read_tag( iter: &mut Iterator<Item=&u8> ) -> Result<Vec<u8>, Error> {
+        let mut tag: Vec<u8> = vec!();
+
 		let first: u8 = match iter.next() {
 			Some( x ) => *x,
-			None => return Ok( Tlv::new() ),
+			None => return Err(errors::ErrorKind::TruncatedTlv.into()),
 		};
 
-        let mut tlv = Tlv::new();
-		tlv.tag.push( first );
+		tag.push( first );
 
 		if first & 0x1F == 0x1F {
 			// long form - find the end
 			for x in &mut *iter {
-				tlv.tag.push( *x );
+				tag.push( *x );
 				if *x & 0x80 == 0 {
 					break;
 				}
 			}
 		}
 
+        Ok(tag)
+    }
+
+	/// Reads out TLV value's length
+	fn read_len( iter: &mut Iterator<Item=&u8> ) -> Result<usize, Error> {
 		let mut len: usize = match iter.next() {
 			Some( x ) => *x as usize,
 			None => return Err(errors::ErrorKind::TruncatedTlv.into()),
@@ -107,32 +113,41 @@ impl Tlv {
             return Err(errors::ErrorKind::TooShortBody(len, remain).into());
 		}
 
-		if tlv.tag[0] & 0x20 == 0x20 { // constructed tag
-			tlv.val = Value::TlvList(vec![]);
+        Ok(len)
+    }
 
-            if let Value::TlvList(ref mut children) = tlv.val {
-                let mut child_len = len;
+	/// Initializes Tlv object iterator of Vec<u8>
+	fn from_iter( iter: &mut Iterator<Item=&u8> ) -> Result<Tlv, Error> {
+        let tag = Tlv::read_tag( iter )?;
+        let len = Tlv::read_len( iter )?;
 
-                // FIXME: make more precise control
-                while iter.size_hint().1.unwrap() != 0 && child_len != 0 {
-                    let child = Tlv::from_iter(iter)?;
-                    child_len -= child.len();
-                    children.push( child );
+        let mut val = &mut iter.take(len);
 
-                }
+        if tag[0] & 0x20 != 0x20 { // primitive tag
+            return Ok( Tlv {
+                tag: tag,
+                val: Value::Val(val.cloned().collect()),
+            })
+        }
+
+        let mut tlv = Tlv {
+            tag: tag,
+            val: Value::TlvList(vec![])
+        };
+
+        while 0 != val.size_hint().1.unwrap() {
+            if let Value::TlvList( ref mut children ) = tlv.val {
+                children.push( Tlv::from_iter( val )? );
             }
-		}
-		else {
-			let val = iter.take(len).cloned().collect();
-			tlv.val = Value::Val(val);
-		}
+        }
 
-        Ok(tlv)
+        return Ok(tlv)
 	}
 
 	/// Initializes Tlv object from [u8] slice
 	pub fn from_vec( slice: &[u8] ) -> Result<Tlv, Error> {
-        Tlv::from_iter( &mut slice.iter() )
+        let mut iter = &mut slice.iter();
+        Tlv::from_iter( iter )
 	}
 }
 
