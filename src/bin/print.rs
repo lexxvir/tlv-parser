@@ -35,8 +35,8 @@ fn print( tlv: &Tlv, ident: usize ) {
 }
 
 fn main() {
-	let mut input = String::new();
-	std::io::stdin().read_to_string( &mut input ).unwrap();
+    let mut input = String::new();
+    std::io::stdin().read_to_string( &mut input ).unwrap();
 
     let buf = input.from_hex().unwrap();
     let mut idx = 0;
