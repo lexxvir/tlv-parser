@@ -20,8 +20,8 @@ pub enum Value {
 
 pub struct Tlv {
     // FIXME: deny explicit assignment
-    pub tag: Vec<u8>,
-    pub val: Value,
+    tag: Vec<u8>,
+    val: Value,
 }
 
 impl Tlv {
@@ -30,18 +30,28 @@ impl Tlv {
         Tlv { tag: vec![], val: Value::Val( vec![] ) }
     }
 
+    /// Returns tag number of TLV
+    pub fn tag(&self) -> Vec<u8> {
+        self.tag.clone()
+    }
+
     /// Returns size of TLV-string in bytes
-    pub fn len( &self ) -> usize {
+    pub fn len(&self) -> usize {
         self.tag.len() + self.val.encode_len().len() + self.val.len()
     }
 
+    /// Returns value if TLV
+    pub fn val(&self) -> &Value {
+        &self.val
+    }
+
     /// Returns true if TLV-object is empty (len() == 0)
-    pub fn is_empty( &self ) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.tag.is_empty() && self.val.is_empty()
     }
 
     /// Returns encoded array of bytes
-    pub fn to_vec( &self ) -> Vec<u8>  {
+    pub fn to_vec(&self) -> Vec<u8>  {
         let mut out: Vec<u8> = vec![];
 
         out.extend_from_slice( &self.tag );
