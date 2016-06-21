@@ -6,6 +6,8 @@ use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
 
 use errors::{Error, ErrorKind};
 
+use rustc_serialize::hex::FromHex;
+
 pub enum Value {
     TlvList( Vec<Tlv> ),
     Val( Vec<u8> ),
@@ -66,6 +68,81 @@ impl Tlv {
         };
 
         out
+    }
+
+    fn get_path(path: &str) -> Option<Vec<Vec<u8>>> {
+        let mut hex_tags: Vec<String> = vec!();
+        let mut tags: Vec<Vec<u8>> = vec!();
+        let mut tag = String::new();
+
+        for c in path.chars() {
+            match c {
+                '/' => {
+                    hex_tags.push(tag.clone());
+                    tag.clear();
+                },
+                ' ' => (),
+                _ => tag.push(c),
+            }
+        }
+
+        if !tag.is_empty() {
+            hex_tags.push(tag);
+        }
+
+        for hex_tag in hex_tags {
+            match hex_tag.from_hex() {
+                Ok(bin) => tags.push(bin),
+                Err(_) => return None,
+            }
+        }
+
+        Some(tags)
+    }
+
+    /// Returns value of TLV
+    /// Example: find_val( "6F / A5 / BF0C / DF7F" )
+    pub fn find_val(&self, path: &str) -> Option<&Value> {
+        let path = match Tlv::get_path(path) {
+            Some(x) => x,
+            None => return None,
+        };
+
+        if path.is_empty() {
+            return None;
+        }
+
+        if path[0] != self.tag {
+            return None;
+        }
+
+        if path.len() == 1 {
+            return Some(&self.val);
+        }
+
+        let mut tlv: &Tlv = &self;
+        let mut i = 1;
+
+        for tag in path.iter().skip(1) {
+            i += 1;
+            match tlv.val {
+                Value::TlvList(ref list) => for subtag in list {
+                    if *tag == subtag.tag {
+                        if path.len() == i {
+                            return Some(&subtag.val);
+                        }
+                        else {
+                            tlv = &subtag;
+                            continue;
+                        }
+                    }
+                },
+                _ => return None,
+
+            }
+        }
+
+        None
     }
 
     /// Reads out tag number
@@ -146,7 +223,7 @@ impl Tlv {
     }
 
     /// Initializes Tlv object from [u8] slice
-    pub fn from_vec( slice: &[u8] ) -> Result<Tlv, Error> {
+    pub fn from_vec(slice: &[u8]) -> Result<Tlv, Error> {
         let mut iter = &mut slice.iter();
         Tlv::from_iter( iter )
     }
@@ -334,5 +411,23 @@ mod tests {
             val: Value::Val( vec![] )
         };
         assert_eq!(tlv.is_empty(), false);
+    }
+
+    #[test]
+    fn find_val_test() {
+        let tlv = Tlv {
+            tag: vec![0x01],
+            val: Value::TlvList(
+                vec![ Tlv {
+                    tag: vec![0x02],
+                    val: Value::Val( vec![ 0xaa ] ) } ] ) };
+
+        match tlv.find_val("01 / 02") {
+            Some(x) => match x {
+                &Value::Val(ref xx) => assert_eq!(*xx, vec![0xaa]),
+                _ => assert_eq!(false, true),
+            },
+            None => assert_eq!(false, true),
+        };
     }
 }
