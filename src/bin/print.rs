@@ -24,7 +24,7 @@ fn print( tlv: &Tlv, ident: usize ) {
             print_tag( &tlv.tag );
 
             for t in list {
-                print(&t, ident + 4);
+                print(&t, ident + 2);
             }
         },
         Value::Val( _ ) => {
@@ -45,6 +45,7 @@ fn main() {
         match Tlv::from_vec(&buf[idx..]) {
             Ok(tlv) => {
                 print( &tlv, 0 );
+                println!("");
                 idx += tlv.len();
             },
             Err(err) => {
