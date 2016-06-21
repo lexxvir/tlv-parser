@@ -2,7 +2,7 @@ extern crate tlv_parser;
 extern crate rustc_serialize;
 
 use std::io::{Read};
-use tlv_parser::*;
+use tlv_parser::tlv::{Tlv, Value};
 
 use rustc_serialize::hex::FromHex;
 
