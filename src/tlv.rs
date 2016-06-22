@@ -8,21 +8,17 @@ use errors::{Error, ErrorKind};
 
 use rustc_serialize::hex::FromHex;
 
+pub type Tag = Vec<u8>;
+type Tags = Vec<Tag>;
+
 pub enum Value {
     TlvList( Vec<Tlv> ),
     Val( Vec<u8> ),
     Nothing
 }
 
-/* TODO: use it instead of Vec<u8> for tag
-   pub enum Tag {
-   Array( Vec<u8> ),
-   Integer( usize ),
-   } */
-
 pub struct Tlv {
-    // FIXME: deny explicit assignment
-    tag: Vec<u8>,
+    tag: Tag,
     val: Value,
 }
 
@@ -33,7 +29,7 @@ impl Tlv {
     }
 
     /// Returns tag number of TLV
-    pub fn tag(&self) -> Vec<u8> {
+    pub fn tag(&self) -> Tag {
         self.tag.clone()
     }
 
@@ -70,43 +66,21 @@ impl Tlv {
         out
     }
 
-    fn get_path(path: &str) -> Option<Vec<Vec<u8>>> {
-        let mut hex_tags: Vec<String> = vec!();
-        let mut tags: Vec<Vec<u8>> = vec!();
-        let mut tag = String::new();
-
-        for c in path.chars() {
-            match c {
-                '/' => {
-                    hex_tags.push(tag.clone());
-                    tag.clear();
-                },
-                ' ' => (),
-                _ => tag.push(c),
-            }
-        }
-
-        if !tag.is_empty() {
-            hex_tags.push(tag);
-        }
-
-        for hex_tag in hex_tags {
-            match hex_tag.from_hex() {
-                Ok(bin) => tags.push(bin),
-                Err(_) => return None,
-            }
-        }
-
-        Some(tags)
+    /// Parses string link "6F / A5" into Tags
+    fn get_path( path: &str ) -> Tags {
+        path
+            .chars()
+            .filter(|&x| x.is_digit(16) || x == '/')
+            .collect::<String>()
+            .split("/")
+            .map(|x| x.from_hex().unwrap_or(vec!()))
+            .collect()
     }
 
     /// Returns value of TLV
     /// Example: find_val( "6F / A5 / BF0C / DF7F" )
     pub fn find_val(&self, path: &str) -> Option<&Value> {
-        let path = match Tlv::get_path(path) {
-            Some(x) => x,
-            None => return None,
-        };
+        let path = Tlv::get_path(path);
 
         if path.is_empty() {
             return None;
