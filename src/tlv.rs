@@ -99,20 +99,23 @@ impl Tlv {
 
         for tag in path.iter().skip(1) {
             i += 1;
-            match tlv.val {
-                Value::TlvList(ref list) => for subtag in list {
-                    if *tag == subtag.tag {
-                        if path.len() == i {
-                            return Some(&subtag.val);
-                        }
-                        else {
-                            tlv = &subtag;
-                            continue;
-                        }
-                    }
-                },
-                _ => return None,
 
+            if let Value::TlvList( ref list ) = tlv.val {
+                for subtag in list {
+                    if *tag != subtag.tag {
+                        continue;
+                    }
+
+                    if path.len() == i {
+                        return Some(&subtag.val);
+                    }
+
+                    tlv = &subtag;
+                    break;
+                }
+            }
+            else {
+                return None;
             }
         }
 
@@ -389,14 +392,10 @@ mod tests {
 
     #[test]
     fn find_val_test() {
-        let tlv = Tlv {
-            tag: vec![0x01],
-            val: Value::TlvList(
-                vec![ Tlv {
-                    tag: vec![0x02],
-                    val: Value::Val( vec![ 0xaa ] ) } ] ) };
+        let input: Vec<u8> = vec![0x21, 0x05, 0x22, 0x03, 0x03, 0x01, 0xaa];
+        let tlv = Tlv::from_vec( &input ).unwrap();
 
-        if let Some(&Value::Val(ref val)) = tlv.find_val("01 / 02") {
+        if let Some(&Value::Val(ref val)) = tlv.find_val("21 / 22 / 03") {
             assert_eq!(*val, vec![0xaa]);
         }
         else {
