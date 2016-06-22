@@ -120,8 +120,8 @@ impl Tlv {
     }
 
     /// Reads out tag number
-    fn read_tag( iter: &mut Iterator<Item=&u8> ) -> Result<Vec<u8>, Error> {
-        let mut tag: Vec<u8> = vec!();
+    fn read_tag( iter: &mut Iterator<Item=&u8> ) -> Result<Tag, Error> {
+        let mut tag: Tag = vec!();
 
         let first: u8 = match iter.next() {
             Some( x ) => *x,
@@ -396,12 +396,11 @@ mod tests {
                     tag: vec![0x02],
                     val: Value::Val( vec![ 0xaa ] ) } ] ) };
 
-        match tlv.find_val("01 / 02") {
-            Some(x) => match x {
-                &Value::Val(ref xx) => assert_eq!(*xx, vec![0xaa]),
-                _ => assert_eq!(false, true),
-            },
-            None => assert_eq!(false, true),
-        };
+        if let Some(&Value::Val(ref val)) = tlv.find_val("01 / 02") {
+            assert_eq!(*val, vec![0xaa]);
+        }
+        else {
+            assert!(false);
+        }
     }
 }
