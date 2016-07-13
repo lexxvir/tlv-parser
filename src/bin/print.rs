@@ -6,14 +6,6 @@ use tlv_parser::tlv::{Tlv, Value};
 
 use rustc_serialize::hex::FromHex;
 
-fn print_tag( tag: &Vec<u8> ) {
-    print!( "tag=" );
-    for x in tag {
-        print!("{:02X}", x);
-    }
-    println!("");
-}
-
 fn print( tlv: &Tlv, ident: usize ) {
     for _ in 0..ident {
         print!(" ");
@@ -21,7 +13,7 @@ fn print( tlv: &Tlv, ident: usize ) {
 
     match tlv.val() {
         &Value::TlvList( ref list ) => {
-            print_tag( &tlv.tag() );
+            println!( "tag={:02X}", tlv.tag());
 
             for t in list {
                 print(&t, ident + 2);
