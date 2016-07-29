@@ -4,6 +4,12 @@ name = "tlv_parser"
 version = "0.0.1"
 authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
 
+description = "BER-TLV parsing & emitting library"
+repository = "https://github.com/lexxvir/tlv-parser"
+readme = "README.md"
+keywords = ["tlv"]
+license = "MIT/Apache-2.0"
+
 [dependencies]
 rustc-serialize = "^0"
 byteorder = "^0"
