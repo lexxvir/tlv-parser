@@ -1,7 +1,21 @@
-language: rust
 sudo: false
+language: rust
+
 rust:
   - nightly
-matrix:
-  allow_failures:
-    - rust: nightly
+
+# load travis-cargo
+before_script:
+  - |
+      pip install 'travis-cargo<0.2' --user &&
+      export PATH=$HOME/.local/bin:$PATH
+
+# the main build
+script:
+  - |
+      travis-cargo build &&
+      travis-cargo test &&
+      travis-cargo doc
+
+after_success:
+  - travis-cargo doc-upload
