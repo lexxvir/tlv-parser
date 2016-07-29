@@ -1,4 +1,6 @@
 # tlv-parser
+[![Build Status](https://travis-ci.org/lexxvir/tlv-parser.svg?branch=master)](https://travis-ci.org/lexxvir/tlv-parser.svg)
+
 Library for parsing BER-TLV
 
 Library is early development stage.
@@ -13,4 +15,3 @@ $ echo "7003820151" | cargo run --example print
 	   tag=82,     len=1,    data=51 Q
 ```
 
-[![Build Status](https://travis-ci.org/lexxvir/tlv-parser.svg?branch=master)](https://travis-ci.org/lexxvir/tlv-parser.svg)
