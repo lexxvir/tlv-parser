@@ -5,6 +5,6 @@ version = "0.0.1"
 authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
 
 [dependencies]
-rustc-serialize = "*"
-byteorder = "*"
-error-chain = "*"
+rustc-serialize = "^0"
+byteorder = "^0"
+error-chain = "^0"
