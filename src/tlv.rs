@@ -1,4 +1,3 @@
-use std::default::Default;
 use std::fmt;
 use std::fmt::{Debug};
 
@@ -23,9 +22,54 @@ pub struct Tlv {
 }
 
 impl Tlv {
-    /// Creates blank Tlv object
-    pub fn new() -> Tlv {
-        Tlv { tag: 0, val: Value::Val( vec![] ) }
+    /// Creates Tlv object
+    ///
+    /// # Examples:
+    ///
+    /// Create empty primitive TLV:
+    ///
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// #
+    /// let primitive_tlv = Tlv::new(0x01, Value::Nothing);
+    /// # let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv]));
+    /// #
+    /// # assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
+    /// ```
+    ///
+    /// Create constructed TLV incapsulated primitive TLV:
+    ///
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// #
+    /// # let primitive_tlv = Tlv::new(0x01, Value::Nothing);
+    /// let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv]));
+    /// #
+    /// # assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
+    /// ```
+    ///
+    /// # Panics:
+    ///
+    /// Panics when tag number defines constructed tag but value is not TlvList
+    ///
+    /// Panics when tag number defines primitive tag but value is TlvList
+    pub fn new( tag: Tag, value: Value ) -> Tlv {
+        let tlv = Tlv { tag: tag, val: Value::Nothing };
+        match value {
+            Value::TlvList(_) => {
+                if tlv.is_primitive() {
+                    panic!("Primitive tag can't carry TlvList");
+                }
+            },
+            Value::Val(_) => {
+                if !tlv.is_primitive() {
+                    panic!("Constructed tag can't carry Val");
+                }
+            },
+            _ => (),
+        }
+
+        Tlv { tag: tag, val: value }
     }
 
     /// Returns tag number of TLV
@@ -33,6 +77,15 @@ impl Tlv {
         self.tag.clone()
     }
 
+    /// Returns length of tag number
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// let tag_len = Tlv::new(0x01, Value::Nothing).tag_len();
+    /// assert_eq!(tag_len, 1);
+    /// ```
     pub fn tag_len(&self) -> usize {
         let mut tag = self.tag;
         let mut len = 0;
@@ -45,6 +98,14 @@ impl Tlv {
     }
 
     /// Returns size of TLV-string in bytes
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// let tlv_len = Tlv::new(0x01, Value::Val(vec![0x02, 0x03])).len();
+    /// assert_eq!(tlv_len, 4);
+    /// ```
     pub fn len(&self) -> usize {
         self.tag_len() + self.val.encode_len().len() + self.val.len()
     }
@@ -54,12 +115,18 @@ impl Tlv {
         &self.val
     }
 
-    /// Returns true if TLV-object is empty (len() == 0)
-    pub fn is_empty(&self) -> bool {
-        self.tag == 0 && self.val.is_empty()
-    }
-
-    /// Returns encoded array of bytes
+    /// Returns TLV-encoded array of bytes
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// let tlv = Tlv::new(0x21,
+    ///     Value::TlvList(vec![
+    ///         Tlv::new( 0x01, Value::Val(vec![0xA1, 0xA2])),
+    ///         Tlv::new( 0x02, Value::Val(vec![0xB1, 0xB2]))]));
+    /// assert_eq!(tlv.to_vec(), vec![0x21, 0x08, 0x01, 0x02, 0xA1, 0xA2, 0x02, 0x02, 0xB1, 0xB2]);
+    /// ```
     pub fn to_vec(&self) -> Vec<u8>  {
         let mut out: Vec<u8> = vec![];
 
@@ -95,7 +162,16 @@ impl Tlv {
     }
 
     /// Returns value of TLV
-    /// Example: find_val( "6F / A5 / BF0C / DF7F" )
+    ///
+    /// # Example
+    /// 
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// let tlv = Tlv::from_vec(&[0x6F, 0x09, 0xA5, 0x07, 0xBF, 0x0C, 0x04, 0xDF, 0x7F, 0x01, 0x55]).unwrap();
+    /// if let &Value::Val(ref v) = tlv.find_val("6F / A5 / BF0C / DF7F").unwrap() {
+    ///     assert_eq!(*v, vec![0x55]);
+    /// }
+    /// ```
     pub fn find_val(&self, path: &str) -> Option<&Value> {
         let path = Tlv::get_path(path);
 
@@ -188,6 +264,7 @@ impl Tlv {
         Ok(len)
     }
 
+    /// Returns true if TLV is primitive
     pub fn is_primitive(&self) -> bool {
         let mask = 0x20 << ((self.tag_len() - 1) * 8);
         self.tag & mask != mask
@@ -219,6 +296,16 @@ impl Tlv {
     }
 
     /// Initializes Tlv object from [u8] slice
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// let tlv = Tlv::from_vec(&[0x01, 0x00]).unwrap();
+    /// assert_eq!(tlv.tag(), 0x01);
+    /// assert_eq!(tlv.tag_len(), 0x01);
+    /// assert_eq!(tlv.len(), 0x02);
+    /// ```
     pub fn from_vec(slice: &[u8]) -> Result<Tlv, Error> {
         let mut iter = &mut slice.iter();
         Tlv::from_iter( iter )
@@ -245,6 +332,7 @@ impl Value {
     }
 
     /// Returns bytes array that represents encoded-len
+    ///
     /// Note: implements only definite form
     pub fn encode_len( &self ) -> Vec<u8> {
         let len = self.len();
@@ -259,12 +347,6 @@ impl Value {
         let bytes = out.len() as u8;
         out.insert(0, 0x80 | bytes);
         out
-    }
-}
-
-impl Default for Tlv {
-    fn default() -> Tlv {
-        Tlv::new()
     }
 }
 
@@ -391,18 +473,6 @@ mod tests {
         };
 
         assert_eq!(&tlv.to_vec()[0 .. 5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
-    }
-
-    #[test]
-    fn is_empty_test() {
-        let tlv = Tlv::new();
-        assert_eq!(tlv.is_empty(), true);
-
-        let tlv = Tlv {
-            tag: 0x03,
-            val: Value::Val( vec![] )
-        };
-        assert_eq!(tlv.is_empty(), false);
     }
 
     #[test]

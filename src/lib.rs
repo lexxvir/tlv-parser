@@ -18,6 +18,16 @@
 //! }
 //! ```
 //!
+//! Emit constructed TLV incapsulated primitive TLV:
+//!
+//! ```
+//! use tlv_parser::tlv::*;
+//! 
+//! let primitive_tlv = Tlv::new(0x01, Value::Nothing);
+//! let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv]));
+//! 
+//! assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
+//! ```
 
 #[macro_use]
 extern crate error_chain;
