@@ -8,7 +8,7 @@ Library for parsing BER-TLV
 
 Library is early development stage and supports parsing from `Vec<u8>` and emitting `Vec<u8>`.
 
-For usage see 'examples/print.rs'.
+For usage see [`examples/print.rs`](https://github.com/lexxvir/tlv-parser/blob/master/examples/print.rs).
 
 ```
 $ echo "7003820151" | cargo run --example print
