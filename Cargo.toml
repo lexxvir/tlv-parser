@@ -15,6 +15,7 @@ license = "MIT/Apache-2.0"
 rustc-serialize = "^0"
 byteorder = "^0"
 error-chain = "^0"
+clippy = "*"
 
 [dev-dependencies]
 quickcheck = "0.3"

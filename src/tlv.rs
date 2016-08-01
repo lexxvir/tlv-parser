@@ -74,7 +74,7 @@ impl Tlv {
 
     /// Returns tag number of TLV
     pub fn tag(&self) -> Tag {
-        self.tag.clone()
+        self.tag
     }
 
     /// Returns length of tag number
@@ -153,10 +153,14 @@ impl Tlv {
             .chars()
             .filter(|&x| x.is_digit(16) || x == '/')
             .collect::<String>()
-            .split("/")
+            .split('/')
             .map(|x| {
-                let y = x.from_hex().unwrap_or(vec!());
-                BigEndian::read_uint(&y, y.len()) as usize
+                if let Ok(y) = x.from_hex() { // FIXME: return error
+                    BigEndian::read_uint(&y, y.len()) as usize
+                }
+                else {
+                    0
+                }
             })
             .collect()
     }
@@ -187,7 +191,7 @@ impl Tlv {
             return Some(&self.val);
         }
 
-        let mut tlv: &Tlv = &self;
+        let mut tlv = self;
         let mut i = 1;
 
         for tag in path.iter().skip(1) {
@@ -203,7 +207,7 @@ impl Tlv {
                         return Some(&subtag.val);
                     }
 
-                    tlv = &subtag;
+                    tlv = subtag;
                     break;
                 }
             }
@@ -252,7 +256,7 @@ impl Tlv {
                 return Err(ErrorKind::InvalidLength.into());
             }
 
-            let tlv_len: Vec<u8> = iter.take(octet_num).map(|x| *x).collect();
+            let tlv_len: Vec<u8> = iter.take(octet_num).cloned().collect();
             len = BigEndian::read_uint(&tlv_len, octet_num) as usize;
         }
 
@@ -292,7 +296,7 @@ impl Tlv {
             }
         }
 
-        return Ok(tlv)
+        Ok(tlv)
     }
 
     /// Initializes Tlv object from [u8] slice
