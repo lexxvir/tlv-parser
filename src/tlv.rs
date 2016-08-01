@@ -94,7 +94,7 @@ impl Tlv {
             tag >>= 8;
         }
 
-        len
+        if len == 0 { len + 1 } else { len }
     }
 
     /// Returns size of TLV-string in bytes
