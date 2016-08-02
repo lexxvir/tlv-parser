@@ -220,7 +220,7 @@ impl Tlv {
     }
 
     /// Reads out tag number
-    fn read_tag( iter: &mut Iterator<Item=&u8> ) -> Result<Tag, Error> {
+    fn read_tag( iter: &mut ExactSizeIterator<Item=&u8> ) -> Result<Tag, Error> {
         let mut tag: Vec<u8> = vec!();
 
         let first: u8 = match iter.next() {
@@ -244,7 +244,7 @@ impl Tlv {
     }
 
     /// Reads out TLV value's length
-    fn read_len( iter: &mut Iterator<Item=&u8> ) -> Result<usize, Error> {
+    fn read_len( iter: &mut ExactSizeIterator<Item=&u8> ) -> Result<usize, Error> {
         let mut len: usize = match iter.next() {
             Some( x ) => *x as usize,
             None => return Err(ErrorKind::TruncatedTlv.into()),
@@ -252,7 +252,7 @@ impl Tlv {
 
         if len & 0x80 != 0 {
             let octet_num = len & 0x7F;
-            if octet_num == 0 || iter.size_hint().1.unwrap() < octet_num {
+            if octet_num == 0 || iter.len() < octet_num {
                 return Err(ErrorKind::InvalidLength.into());
             }
 
@@ -260,7 +260,7 @@ impl Tlv {
             len = BigEndian::read_uint(&tlv_len, octet_num) as usize;
         }
 
-        let remain = iter.size_hint().1.unwrap();
+        let remain = iter.len();
         if remain < len {
             return Err(ErrorKind::TooShortBody(len, remain).into());
         }
@@ -275,7 +275,7 @@ impl Tlv {
     }
 
     /// Initializes Tlv object iterator of Vec<u8>
-    fn from_iter( iter: &mut Iterator<Item=&u8> ) -> Result<Tlv, Error> {
+    fn from_iter( iter: &mut ExactSizeIterator<Item=&u8> ) -> Result<Tlv, Error> {
         let tag = Tlv::read_tag( iter )?;
         let len = Tlv::read_len( iter )?;
 
@@ -290,7 +290,7 @@ impl Tlv {
 
         tlv.val = Value::TlvList(vec![]);
 
-        while 0 != val.size_hint().1.unwrap() {
+        while !val.is_empty() {
             if let Value::TlvList( ref mut children ) = tlv.val {
                 children.push( Tlv::from_iter( val )? );
             }

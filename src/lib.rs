@@ -2,6 +2,7 @@
 #![feature(question_mark)]
 #![feature(test)]
 #![feature(plugin)]
+#![feature(exact_size_is_empty)]
 
 #![plugin(clippy)]
 
