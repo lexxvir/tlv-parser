@@ -320,7 +320,7 @@ impl Value {
     /// Returns size of value in bytes
     fn len( &self ) -> usize {
         match *self {
-            Value::TlvList(ref list) => list.iter().fold(0, |sum, ref x| sum + x.len()),
+            Value::TlvList(ref list) => list.iter().fold(0, |sum, x| sum + x.len()),
             Value::Val(ref v) => v.len(),
             Value::Nothing => 0,
         }
