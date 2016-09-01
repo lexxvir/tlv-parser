@@ -1,6 +1,7 @@
 # tlv-parser
 [![Build Status](https://travis-ci.org/lexxvir/tlv-parser.svg?branch=master)](https://travis-ci.org/lexxvir/tlv-parser.svg)
 [![Latest Version](https://img.shields.io/crates/v/tlv_parser.svg)](https://crates.io/crates/tlv_parser)
+![Docs](https://docs.rs/tlv_parser/badge.svg)
 
 Library for parsing BER-TLV
 
