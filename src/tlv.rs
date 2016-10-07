@@ -110,6 +110,11 @@ impl Tlv {
         self.tag_len() + self.val.encode_len().len() + self.val.len()
     }
 
+    /// Returns true if Value of TLV is empty
+    pub fn is_empty(&self) -> bool {
+        self.val.is_empty()
+    }
+
     /// Returns value if TLV
     pub fn val(&self) -> &Value {
         &self.val
@@ -403,7 +408,7 @@ impl fmt::Display for Value {
             },
 
             Value::Val( ref v ) => {
-                write!(f, "data=")?;
+                write!(f, "val=")?;
                 for x in v { write!(f, "{:02X}", x)?; }
                 write!(f, " ")?;
                 for x in v {
