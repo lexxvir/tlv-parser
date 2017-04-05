@@ -1,4 +1,5 @@
 use std::fmt;
+use std::mem;
 use std::fmt::{Debug};
 
 use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
@@ -245,7 +246,12 @@ impl Tlv {
             }
         }
 
-        Ok(BigEndian::read_uint(&tag, tag.len()) as usize)
+        let tag_len = tag.len();
+        if tag_len == 0 || tag_len > mem::size_of::<usize>() {
+            return Err(ErrorKind::InvalidLength.into());
+        }
+
+        Ok(BigEndian::read_uint(&tag, tag_len) as usize)
     }
 
     /// Reads out TLV value's length
@@ -257,12 +263,14 @@ impl Tlv {
 
         if len & 0x80 != 0 {
             let octet_num = len & 0x7F;
-            if octet_num == 0 || iter.len() < octet_num {
+            let tlv_len: Vec<u8> = iter.take(octet_num).cloned().collect();
+            let len_of_length = tlv_len.len();
+
+            if len_of_length == 0 || len_of_length > mem::size_of::<usize>() {
                 return Err(ErrorKind::InvalidLength.into());
             }
 
-            let tlv_len: Vec<u8> = iter.take(octet_num).cloned().collect();
-            len = BigEndian::read_uint(&tlv_len, octet_num) as usize;
+            len = BigEndian::read_uint(&tlv_len, len_of_length) as usize;
         }
 
         let remain = iter.len();
