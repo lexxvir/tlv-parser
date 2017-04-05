@@ -1,5 +1,3 @@
-#![crate_name = "tlv_parser"]
-#![feature(test)]
 #![feature(exact_size_is_empty)]
 
 //! A library to parse and emit [BER-TLV](https://en.wikipedia.org/wiki/X.690#BER_encoding) data.
@@ -35,7 +33,6 @@ extern crate error_chain;
 
 extern crate byteorder;
 extern crate rustc_serialize;
-extern crate test;
 
 pub mod tlv;
 pub mod errors;
