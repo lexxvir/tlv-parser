@@ -7,7 +7,7 @@ Library for parsing BER-TLV
 
 [Documentation](https://lexxvir.github.io/tlv-parser/tlv_parser/index.html)
 
-Library is early development stage and supports parsing from `Vec<u8>` and emitting `Vec<u8>`.
+Library is early development stage and supports parsing from `&[u8]` and emitting `Vec<u8>`.
 
 *For now, it only builds on nightly.*
 
