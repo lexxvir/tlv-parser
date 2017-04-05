@@ -162,7 +162,13 @@ impl Tlv {
             .split('/')
             .map(|x| {
                 if let Ok(y) = x.from_hex() { // FIXME: return error
-                    BigEndian::read_uint(&y, y.len()) as usize
+                    let y_len = y.len();
+                    if y_len > 0 && y_len <= mem::size_of::<usize>() {
+                        BigEndian::read_uint(&y, y.len()) as usize
+                    }
+                    else {
+                        0
+                    }
                 }
                 else {
                     0
