@@ -2,9 +2,6 @@
 #![feature(test)]
 #![feature(exact_size_is_empty)]
 
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
-
 //! A library to parse and emit [BER-TLV](https://en.wikipedia.org/wiki/X.690#BER_encoding) data.
 //!
 //! #Examples
