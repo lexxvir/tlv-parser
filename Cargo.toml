@@ -1,20 +1,18 @@
 [package]
-
-name = "tlv_parser"
-version = "0.1.2"
 authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
-
 description = "BER-TLV parsing & emitting library"
-repository = "https://github.com/lexxvir/tlv-parser"
 documentation = "https://lexxvir.github.io/tlv-parser"
-readme = "README.md"
 keywords = ["tlv"]
 license = "MIT/Apache-2.0"
+name = "tlv_parser"
+readme = "README.md"
+repository = "https://github.com/lexxvir/tlv-parser"
+version = "0.1.3"
 
 [dependencies]
-rustc-serialize = "^0"
 byteorder = "^0"
 error-chain = "^0"
+rustc-serialize = "^0"
 
 [dev-dependencies]
 quickcheck = "0.3"
