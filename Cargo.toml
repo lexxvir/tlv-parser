@@ -16,8 +16,5 @@ rustc-serialize = "^0"
 byteorder = "^0"
 error-chain = "^0"
 
-[feature]
-default = []
-
 [dev-dependencies]
 quickcheck = "0.3"
