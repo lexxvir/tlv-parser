@@ -11,15 +11,15 @@ fn print( tlv: &Tlv, ident: usize ) {
         print!(" ");
     }
 
-    match tlv.val() {
-        &Value::TlvList( ref list ) => {
+    match *tlv.val() {
+        Value::TlvList( ref list ) => {
             println!( "tag={:02X}", tlv.tag());
 
             for t in list {
-                print(&t, ident + 2);
+                print(t, ident + 2);
             }
         },
-        &Value::Val( _ ) => {
+        Value::Val( _ ) => {
             println!("{}", tlv);
         },
         _ => (),
