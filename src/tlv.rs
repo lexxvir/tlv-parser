@@ -3,10 +3,9 @@ use std::mem;
 use std::fmt::{Debug};
 
 use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
+use hex::FromHex;
 
 use errors::{Error, ErrorKind};
-
-use rustc_serialize::hex::FromHex;
 
 pub type Tag = usize;
 type Tags = Vec<Tag>;
@@ -161,7 +160,8 @@ impl Tlv {
             .collect::<String>()
             .split('/')
             .map(|x| {
-                if let Ok(y) = x.from_hex() { // FIXME: return error
+                let hex: Result<Vec<u8>, _> = FromHex::from_hex(x);
+                if let Ok(y) = hex { // FIXME: return error
                     let y_len = y.len();
                     if y_len > 0 && y_len <= mem::size_of::<usize>() {
                         BigEndian::read_uint(&y, y.len()) as usize

@@ -12,7 +12,7 @@ version = "0.1.4"
 [dependencies]
 byteorder = "^0"
 error-chain = "^0"
-rustc-serialize = "^0"
+hex = "^0"
 
 [dev-dependencies]
 quickcheck = "0.3"

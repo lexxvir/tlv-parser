@@ -1,10 +1,10 @@
 extern crate tlv_parser;
-extern crate rustc_serialize;
+extern crate hex;
 
 use std::io::{Read};
 use tlv_parser::tlv::{Tlv, Value};
 
-use rustc_serialize::hex::FromHex;
+use hex::FromHex;
 
 fn print( tlv: &Tlv, ident: usize ) {
     for _ in 0..ident {
@@ -30,7 +30,7 @@ fn main() {
     let mut input = String::new();
     std::io::stdin().read_to_string( &mut input ).unwrap();
 
-    let buf = input.from_hex().unwrap();
+    let buf: Vec<u8> = FromHex::from_hex(&input).unwrap();
     let mut idx = 0;
 
     while idx < buf.len() {
