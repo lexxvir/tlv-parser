@@ -32,7 +32,7 @@
 extern crate error_chain;
 
 extern crate byteorder;
-extern crate rustc_serialize;
+extern crate hex;
 
 pub mod tlv;
 pub mod errors;
