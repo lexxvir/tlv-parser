@@ -13,10 +13,10 @@ fn quickcheck_from_vec() {
                 let truncacted_xs = xs.into_iter().take(restored_tlv.len()).collect::<Vec<u8>>();
 
                 TestResult::from_bool(restored_tlv == truncacted_xs)
-            },
+            }
             Err(_) => TestResult::discard(),
         }
     }
 
-    quickcheck(prop as fn(Vec<u8>) -> TestResult);    
+    quickcheck(prop as fn(Vec<u8>) -> TestResult);
 }

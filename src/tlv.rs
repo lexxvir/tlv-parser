@@ -1,6 +1,6 @@
 use std::fmt;
 use std::mem;
-use std::fmt::{Debug};
+use std::fmt::Debug;
 
 use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
 use hex::FromHex;
@@ -11,9 +11,9 @@ pub type Tag = usize;
 type Tags = Vec<Tag>;
 
 pub enum Value {
-    TlvList( Vec<Tlv> ),
-    Val( Vec<u8> ),
-    Nothing
+    TlvList(Vec<Tlv>),
+    Val(Vec<u8>),
+    Nothing,
 }
 
 pub struct Tlv {
@@ -53,23 +53,29 @@ impl Tlv {
     /// Panics when tag number defines constructed tag but value is not TlvList
     ///
     /// Panics when tag number defines primitive tag but value is TlvList
-    pub fn new( tag: Tag, value: Value ) -> Tlv {
-        let tlv = Tlv { tag: tag, val: Value::Nothing };
+    pub fn new(tag: Tag, value: Value) -> Tlv {
+        let tlv = Tlv {
+            tag: tag,
+            val: Value::Nothing,
+        };
         match value {
             Value::TlvList(_) => {
                 if tlv.is_primitive() {
                     panic!("Primitive tag can't carry TlvList");
                 }
-            },
+            }
             Value::Val(_) => {
                 if !tlv.is_primitive() {
                     panic!("Constructed tag can't carry Val");
                 }
-            },
+            }
             _ => (),
         }
 
-        Tlv { tag: tag, val: value }
+        Tlv {
+            tag: tag,
+            val: value,
+        }
     }
 
     /// Returns tag number of TLV
@@ -80,7 +86,7 @@ impl Tlv {
     /// Returns length of tag number
     ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// # use tlv_parser::tlv::*;
     /// let tag_len = Tlv::new(0x01, Value::Nothing).tag_len();
@@ -132,20 +138,22 @@ impl Tlv {
     ///         Tlv::new( 0x02, Value::Val(vec![0xB1, 0xB2]))]));
     /// assert_eq!(tlv.to_vec(), vec![0x21, 0x08, 0x01, 0x02, 0xA1, 0xA2, 0x02, 0x02, 0xB1, 0xB2]);
     /// ```
-    pub fn to_vec(&self) -> Vec<u8>  {
+    pub fn to_vec(&self) -> Vec<u8> {
         let mut out: Vec<u8> = vec![];
 
         let mut tag = vec![0; self.tag_len()];
         BigEndian::write_uint(&mut tag, self.tag as u64, self.tag_len());
 
-        out.extend_from_slice( &tag );
-        out.append( &mut self.val.encode_len() );
+        out.extend_from_slice(&tag);
+        out.append(&mut self.val.encode_len());
 
         match self.val {
-            Value::TlvList( ref list ) => for x in list.iter() {
-                out.append( &mut x.to_vec() );
-            },
-            Value::Val( ref v ) => out.extend_from_slice( v ),
+            Value::TlvList(ref list) => {
+                for x in list.iter() {
+                    out.append(&mut x.to_vec());
+                }
+            }
+            Value::Val(ref v) => out.extend_from_slice(v),
             Value::Nothing => (),
         };
 
@@ -153,24 +161,22 @@ impl Tlv {
     }
 
     /// Parses string link "6F / A5" into Tags
-    fn get_path( path: &str ) -> Tags {
-        path
-            .chars()
+    fn get_path(path: &str) -> Tags {
+        path.chars()
             .filter(|&x| x.is_digit(16) || x == '/')
             .collect::<String>()
             .split('/')
             .map(|x| {
                 let hex: Result<Vec<u8>, _> = FromHex::from_hex(x);
-                if let Ok(y) = hex { // FIXME: return error
+                if let Ok(y) = hex {
+                    // FIXME: return error
                     let y_len = y.len();
                     if y_len > 0 && y_len <= mem::size_of::<usize>() {
                         BigEndian::read_uint(&y, y.len()) as usize
-                    }
-                    else {
+                    } else {
                         0
                     }
-                }
-                else {
+                } else {
                     0
                 }
             })
@@ -180,7 +186,7 @@ impl Tlv {
     /// Returns value of TLV
     ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// # use tlv_parser::tlv::*;
     /// let tlv = Tlv::from_vec(&[0x6F, 0x09, 0xA5, 0x07, 0xBF, 0x0C, 0x04, 0xDF, 0x7F, 0x01, 0x55]).unwrap();
@@ -209,7 +215,7 @@ impl Tlv {
         for tag in path.iter().skip(1) {
             i += 1;
 
-            if let Value::TlvList( ref list ) = tlv.val {
+            if let Value::TlvList(ref list) = tlv.val {
                 for subtag in list {
                     if *tag != subtag.tag {
                         continue;
@@ -222,8 +228,7 @@ impl Tlv {
                     tlv = subtag;
                     break;
                 }
-            }
-            else {
+            } else {
                 return None;
             }
         }
@@ -232,20 +237,20 @@ impl Tlv {
     }
 
     /// Reads out tag number
-    fn read_tag( iter: &mut ExactSizeIterator<Item=&u8> ) -> Result<Tag, Error> {
-        let mut tag: Vec<u8> = vec!();
+    fn read_tag(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tag, Error> {
+        let mut tag: Vec<u8> = vec![];
 
         let first: u8 = match iter.next() {
-            Some( x ) => *x,
+            Some(x) => *x,
             None => return Err(ErrorKind::TruncatedTlv.into()),
         };
 
-        tag.push( first );
+        tag.push(first);
 
         if first & 0x1F == 0x1F {
             // long form - find the end
             for x in &mut *iter {
-                tag.push( *x );
+                tag.push(*x);
                 if *x & 0x80 == 0 {
                     break;
                 }
@@ -261,9 +266,9 @@ impl Tlv {
     }
 
     /// Reads out TLV value's length
-    fn read_len( iter: &mut ExactSizeIterator<Item=&u8> ) -> Result<usize, Error> {
+    fn read_len(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<usize, Error> {
         let mut len: usize = match iter.next() {
-            Some( x ) => *x as usize,
+            Some(x) => *x as usize,
             None => return Err(ErrorKind::TruncatedTlv.into()),
         };
 
@@ -294,24 +299,27 @@ impl Tlv {
     }
 
     /// Initializes Tlv object iterator of Vec<u8>
-    fn from_iter( iter: &mut ExactSizeIterator<Item=&u8> ) -> Result<Tlv, Error> {
-        let tag = Tlv::read_tag( iter )?;
-        let len = Tlv::read_len( iter )?;
+    fn from_iter(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tlv, Error> {
+        let tag = Tlv::read_tag(iter)?;
+        let len = Tlv::read_len(iter)?;
 
         let mut val = &mut iter.take(len);
 
-        let mut tlv = Tlv { tag: tag, val: Value::Nothing };
+        let mut tlv = Tlv {
+            tag: tag,
+            val: Value::Nothing,
+        };
 
         if tlv.is_primitive() {
             tlv.val = Value::Val(val.cloned().collect());
-            return Ok( tlv );
+            return Ok(tlv);
         }
 
         tlv.val = Value::TlvList(vec![]);
 
         while !val.is_empty() {
-            if let Value::TlvList( ref mut children ) = tlv.val {
-                children.push( Tlv::from_iter( val )? );
+            if let Value::TlvList(ref mut children) = tlv.val {
+                children.push(Tlv::from_iter(val)?);
             }
         }
 
@@ -331,13 +339,13 @@ impl Tlv {
     /// ```
     pub fn from_vec(slice: &[u8]) -> Result<Tlv, Error> {
         let mut iter = &mut slice.iter();
-        Tlv::from_iter( iter )
+        Tlv::from_iter(iter)
     }
 }
 
 impl Value {
     /// Returns size of value in bytes
-    fn len( &self ) -> usize {
+    fn len(&self) -> usize {
         match *self {
             Value::TlvList(ref list) => list.iter().fold(0, |sum, x| sum + x.len()),
             Value::Val(ref v) => v.len(),
@@ -346,10 +354,10 @@ impl Value {
     }
 
     /// Returns true if Value is empty (len() == 0)
-    pub fn is_empty( &self ) -> bool {
+    pub fn is_empty(&self) -> bool {
         match *self {
-            Value::TlvList( ref list ) => list.is_empty(),
-            Value::Val( ref v ) => v.is_empty(),
+            Value::TlvList(ref list) => list.is_empty(),
+            Value::Val(ref v) => v.is_empty(),
             Value::Nothing => true,
         }
     }
@@ -357,7 +365,7 @@ impl Value {
     /// Returns bytes array that represents encoded-len
     ///
     /// Note: implements only definite form
-    pub fn encode_len( &self ) -> Vec<u8> {
+    pub fn encode_len(&self) -> Vec<u8> {
         let len = self.len();
         if len <= 0x7f {
             return vec![len as u8];
@@ -365,7 +373,7 @@ impl Value {
 
         let mut out: Vec<u8> = vec![];
         out.write_u64::<BigEndian>(len as u64).unwrap();
-        out = out.iter().skip_while(|&x| *x == 0 ).cloned().collect();
+        out = out.iter().skip_while(|&x| *x == 0).cloned().collect();
 
         let bytes = out.len() as u8;
         out.insert(0, 0x80 | bytes);
@@ -386,7 +394,7 @@ impl fmt::Display for Tlv {
         write!(f, "len={},", self.val.len())?;
 
         match self.val {
-            Value::Val( _ ) => {
+            Value::Val(_) => {
                 let len = self.val.len();
                 let mut num1 = 1;
                 let mut num2 = 10;
@@ -401,7 +409,7 @@ impl fmt::Display for Tlv {
                     p.push(' ');
                 }
                 f.pad(p.as_ref())?;
-            },
+            }
             _ => f.pad("")?,
         }
 
@@ -413,28 +421,29 @@ impl fmt::Display for Tlv {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Value::TlvList( ref list ) => {
+            Value::TlvList(ref list) => {
                 for x in list.iter() {
                     write!(f, "\n")?;
                     x.fmt(f)?;
                 }
                 Ok(())
-            },
+            }
 
-            Value::Val( ref v ) => {
+            Value::Val(ref v) => {
                 write!(f, "val=")?;
-                for x in v { write!(f, "{:02X}", x)?; }
+                for x in v {
+                    write!(f, "{:02X}", x)?;
+                }
                 write!(f, " ")?;
                 for x in v {
                     if *x >= 0x20 && *x < 0x7f {
                         write!(f, "{}", *x as char)?;
-                    }
-                    else {
+                    } else {
                         write!(f, ".")?;
                     }
                 }
                 Ok(())
-            },
+            }
             _ => ().fmt(f),
         }
     }
@@ -448,75 +457,86 @@ mod tests {
     fn from_vec_test() {
         // simple two bytes TLV
         let input: Vec<u8> = vec![0x01, 0x02, 0x00, 0x00];
-        assert_eq!(Tlv::from_vec( &input ).unwrap().to_vec(), input );
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
 
         // TLV with two bytes tag
-        let input: Vec<u8> = vec![0x9F, 0x02, 0x02, 0x00, 0x00 ];
-        assert_eq!(Tlv::from_vec( &input ).unwrap().to_vec(), input );
+        let input: Vec<u8> = vec![0x9F, 0x02, 0x02, 0x00, 0x00];
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
 
         // TLV with two bytes length
         let mut input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80];
-        input.extend_from_slice( &[0; 0x80] );
-        assert_eq!(Tlv::from_vec( &input ).unwrap().to_vec(), input );
+        input.extend_from_slice(&[0; 0x80]);
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
     }
 
     #[test]
     fn to_vec_test() {
         let tlv = Tlv {
             tag: 0x01,
-            val: Value::Val( vec![0] )
+            val: Value::Val(vec![0]),
         };
 
         assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00]);
 
         let tlv = Tlv {
             tag: 0x01,
-            val: Value::Val( vec![0; 127] )
+            val: Value::Val(vec![0; 127]),
         };
 
-        assert_eq!(&tlv.to_vec()[0 .. 3], [0x01, 0x7F, 0x00]);
+        assert_eq!(&tlv.to_vec()[0..3], [0x01, 0x7F, 0x00]);
 
         let tlv = Tlv {
             tag: 0x01,
-            val: Value::Val( vec![0; 255] )
+            val: Value::Val(vec![0; 255]),
         };
 
-        assert_eq!(&tlv.to_vec()[0 .. 4], [0x01, 0x81, 0xFF, 0x00]);
+        assert_eq!(&tlv.to_vec()[0..4], [0x01, 0x81, 0xFF, 0x00]);
 
         let tlv = Tlv {
             tag: 0x02,
-            val: Value::Val( vec![0; 256] )
+            val: Value::Val(vec![0; 256]),
         };
 
-        assert_eq!(&tlv.to_vec()[0 .. 4], [0x02, 0x82, 0x01, 0x00]);
+        assert_eq!(&tlv.to_vec()[0..4], [0x02, 0x82, 0x01, 0x00]);
 
         let tlv = Tlv {
             tag: 0x03,
-            val: Value::Val( vec![0; 0xffff01] )
+            val: Value::Val(vec![0; 0xffff01]),
         };
 
-        assert_eq!(&tlv.to_vec()[0 .. 5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
+        assert_eq!(&tlv.to_vec()[0..5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
     }
 
     #[test]
     fn find_val_test() {
         let input: Vec<u8> = vec![0x21, 0x05, 0x22, 0x03, 0x03, 0x01, 0xaa];
-        let tlv = Tlv::from_vec( &input ).unwrap();
+        let tlv = Tlv::from_vec(&input).unwrap();
 
         if let Some(&Value::Val(ref val)) = tlv.find_val("21 / 22 / 03") {
             assert_eq!(*val, vec![0xaa]);
-        }
-        else {
+        } else {
             assert!(false);
         }
     }
 
     #[test]
     fn tag_len_test() {
-        let tlv1 = Tlv { tag: 0x03, val: Value::Nothing };
-        let tlv2 = Tlv { tag: 0x0303, val: Value::Nothing };
-        let tlv3 = Tlv { tag: 0x030303, val: Value::Nothing };
-        let tlv4 = Tlv { tag: 0x03030303, val: Value::Nothing };
+        let tlv1 = Tlv {
+            tag: 0x03,
+            val: Value::Nothing,
+        };
+        let tlv2 = Tlv {
+            tag: 0x0303,
+            val: Value::Nothing,
+        };
+        let tlv3 = Tlv {
+            tag: 0x030303,
+            val: Value::Nothing,
+        };
+        let tlv4 = Tlv {
+            tag: 0x03030303,
+            val: Value::Nothing,
+        };
 
         assert_eq!(tlv1.tag_len(), 1);
         assert_eq!(tlv2.tag_len(), 2);

@@ -21,4 +21,3 @@ error_chain! {
         }
     }
 }
-
