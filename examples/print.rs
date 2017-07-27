@@ -29,6 +29,7 @@ fn print(tlv: &Tlv, ident: usize) {
 fn main() {
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input).unwrap();
+    input = input.replace("\n", "");
 
     let buf: Vec<u8> = FromHex::from_hex(&input).unwrap();
     let mut idx = 0;
