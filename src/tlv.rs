@@ -386,7 +386,7 @@ impl fmt::Display for Tlv {
         write!(f, "tag={:02X},", self.tag)?;
 
         let mut p = String::new();
-        for _ in 0..(12 - (self.tag_len() * 2 + 5)) {
+        for _ in 0..12usize.saturating_sub(self.tag_len() * 2 + 5) {
             p.push(' ');
         }
 
@@ -466,6 +466,10 @@ mod tests {
         // TLV with two bytes length
         let mut input: Vec<u8> = vec![0x9F, 0x02, 0x81, 0x80];
         input.extend_from_slice(&[0; 0x80]);
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
+
+        // TLV with four bytes tag number
+        let input: Vec<u8> = vec![0x5f, 0xc8, 0x80, 0x01, 0x02, 0x01, 0x02];
         assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
     }
 
