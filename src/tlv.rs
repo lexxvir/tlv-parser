@@ -303,7 +303,7 @@ impl Tlv {
         let tag = Tlv::read_tag(iter)?;
         let len = Tlv::read_len(iter)?;
 
-        let mut val = &mut iter.take(len);
+        let val = &mut iter.take(len);
 
         let mut tlv = Tlv {
             tag: tag,
@@ -338,7 +338,7 @@ impl Tlv {
     /// assert_eq!(tlv.len(), 0x02);
     /// ```
     pub fn from_vec(slice: &[u8]) -> Result<Tlv, Error> {
-        let mut iter = &mut slice.iter();
+        let iter = &mut slice.iter();
         Tlv::from_iter(iter)
     }
 }
