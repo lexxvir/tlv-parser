@@ -11,7 +11,7 @@ Library is early development stage and supports parsing from `&[u8]` and emittin
 
 *For now, it only builds on nightly.*
 
-For usage see [`src/bin/decode-tlv.rs`](https://github.com/lexxvir/tlv-parser/blob/master/examples/src/bin/decode-tlv.rs).
+For usage see [`src/bin/decode-tlv.rs`](https://github.com/lexxvir/tlv-parser/blob/master/src/bin/decode-tlv.rs).
 
 ```
 $ echo "7003820151" | cargo run
