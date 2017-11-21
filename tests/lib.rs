@@ -1,8 +1,8 @@
-extern crate tlv_parser;
 extern crate quickcheck;
+extern crate tlv_parser;
 
 use tlv_parser::*;
-use quickcheck::{TestResult, quickcheck};
+use quickcheck::{quickcheck, TestResult};
 
 #[test]
 fn quickcheck_from_vec() {

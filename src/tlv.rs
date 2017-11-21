@@ -2,10 +2,10 @@ use std::fmt;
 use std::mem;
 use std::fmt::Debug;
 
-use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
+use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use hex::FromHex;
 
-use super::{TlvError, Result};
+use super::{Result, TlvError};
 
 pub type Tag = usize;
 type Tags = Vec<Tag>;
@@ -59,16 +59,12 @@ impl Tlv {
             val: Value::Nothing,
         };
         match value {
-            Value::TlvList(_) => {
-                if tlv.is_primitive() {
-                    panic!("Primitive tag can't carry TlvList");
-                }
-            }
-            Value::Val(_) => {
-                if !tlv.is_primitive() {
-                    panic!("Constructed tag can't carry Val");
-                }
-            }
+            Value::TlvList(_) => if tlv.is_primitive() {
+                panic!("Primitive tag can't carry TlvList");
+            },
+            Value::Val(_) => if !tlv.is_primitive() {
+                panic!("Constructed tag can't carry Val");
+            },
             _ => (),
         }
 
@@ -100,7 +96,11 @@ impl Tlv {
             tag >>= 8;
         }
 
-        if len == 0 { len + 1 } else { len }
+        if len == 0 {
+            len + 1
+        } else {
+            len
+        }
     }
 
     /// Returns size of TLV-string in bytes
@@ -148,11 +148,9 @@ impl Tlv {
         out.append(&mut self.val.encode_len());
 
         match self.val {
-            Value::TlvList(ref list) => {
-                for x in list.iter() {
-                    out.append(&mut x.to_vec());
-                }
-            }
+            Value::TlvList(ref list) => for x in list.iter() {
+                out.append(&mut x.to_vec());
+            },
             Value::Val(ref v) => out.extend_from_slice(v),
             Value::Nothing => (),
         };
@@ -169,7 +167,7 @@ impl Tlv {
             .map(|x| {
                 FromHex::from_hex(x)
                     .ok()
-                    .and_then(|x: Vec<u8>|{
+                    .and_then(|x: Vec<u8>| {
                         let x_len = x.len();
 
                         if x_len > 0 && x_len <= mem::size_of::<usize>() {
@@ -178,7 +176,8 @@ impl Tlv {
                             // FIXME: return error
                             Some(0)
                         }
-                    }).unwrap_or(0)
+                    })
+                    .unwrap_or(0)
             })
             .collect()
     }
@@ -189,7 +188,8 @@ impl Tlv {
     ///
     /// ```
     /// # use tlv_parser::tlv::*;
-    /// let tlv = Tlv::from_vec(&[0x6F, 0x09, 0xA5, 0x07, 0xBF, 0x0C, 0x04, 0xDF, 0x7F, 0x01, 0x55]).unwrap();
+    /// let tlv = Tlv::from_vec(&[0x6F, 0x09, 0xA5, 0x07, 0xBF, 0x0C, 0x04, 0xDF, 0x7F, 0x01, 0x55])
+    ///     .unwrap();
     /// if let &Value::Val(ref v) = tlv.find_val("6F / A5 / BF0C / DF7F").unwrap() {
     ///     assert_eq!(*v, vec![0x55]);
     /// }
@@ -240,8 +240,7 @@ impl Tlv {
     fn read_tag(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tag> {
         let mut tag: Vec<u8> = vec![];
 
-        let first: u8 = iter.next().cloned()
-            .ok_or_else(|| TlvError::TruncatedTlv)?;
+        let first: u8 = iter.next().cloned().ok_or_else(|| TlvError::TruncatedTlv)?;
 
         tag.push(first);
 
@@ -265,8 +264,7 @@ impl Tlv {
 
     /// Reads out TLV value's length
     fn read_len(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<usize> {
-        let mut len: usize = *iter.next()
-            .ok_or_else(|| TlvError::TruncatedTlv)? as usize;
+        let mut len: usize = *iter.next().ok_or_else(|| TlvError::TruncatedTlv)? as usize;
 
         if len & 0x80 != 0 {
             let octet_num = len & 0x7F;
@@ -282,7 +280,10 @@ impl Tlv {
 
         let remain = iter.len();
         if remain < len {
-            Err(TlvError::TooShortBody{ expected: len, found: remain })?;
+            Err(TlvError::TooShortBody {
+                expected: len,
+                found: remain,
+            })?;
         }
 
         Ok(len)
