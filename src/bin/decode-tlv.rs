@@ -39,7 +39,7 @@ fn main() {
         match Tlv::from_vec(&buf[idx..]) {
             Ok(tlv) => {
                 print(&tlv, 0);
-                println!("");
+                println!();
                 idx += tlv.len();
             }
             Err(err) => {
