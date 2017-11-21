@@ -28,11 +28,31 @@
 //! assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
 //! ```
 
+extern crate failure;
 #[macro_use]
-extern crate error_chain;
+extern crate failure_derive;
 
 extern crate byteorder;
 extern crate hex;
 
 pub mod tlv;
-pub mod errors;
+
+use failure::Error;
+
+type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Fail)]
+pub enum TlvError {
+    #[fail(display = "Too short input vector")]
+    TruncatedTlv,
+
+    #[fail(display = "Invalid length value")]
+    InvalidLength,
+
+    #[fail(display = "Too short body: expected {}, found {}", expected, found)]
+    TooShortBody {
+        expected: usize,
+        found: usize
+    }
+}
+

@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use byteorder::{WriteBytesExt, ByteOrder, BigEndian};
 use hex::FromHex;
 
-use errors::{Error, ErrorKind};
+use super::{TlvError, Result};
 
 pub type Tag = usize;
 type Tags = Vec<Tag>;
@@ -167,18 +167,18 @@ impl Tlv {
             .collect::<String>()
             .split('/')
             .map(|x| {
-                let hex: Result<Vec<u8>, _> = FromHex::from_hex(x);
-                if let Ok(y) = hex {
-                    // FIXME: return error
-                    let y_len = y.len();
-                    if y_len > 0 && y_len <= mem::size_of::<usize>() {
-                        BigEndian::read_uint(&y, y.len()) as usize
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                }
+                FromHex::from_hex(x)
+                    .ok()
+                    .and_then(|x: Vec<u8>|{
+                        let x_len = x.len();
+
+                        if x_len > 0 && x_len <= mem::size_of::<usize>() {
+                            Some(BigEndian::read_uint(&x, x.len()) as usize)
+                        } else {
+                            // FIXME: return error
+                            Some(0)
+                        }
+                    }).unwrap_or(0)
             })
             .collect()
     }
@@ -237,13 +237,11 @@ impl Tlv {
     }
 
     /// Reads out tag number
-    fn read_tag(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tag, Error> {
+    fn read_tag(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tag> {
         let mut tag: Vec<u8> = vec![];
 
-        let first: u8 = match iter.next() {
-            Some(x) => *x,
-            None => return Err(ErrorKind::TruncatedTlv.into()),
-        };
+        let first: u8 = iter.next().cloned()
+            .ok_or_else(|| TlvError::TruncatedTlv)?;
 
         tag.push(first);
 
@@ -259,18 +257,16 @@ impl Tlv {
 
         let tag_len = tag.len();
         if tag_len == 0 || tag_len > mem::size_of::<usize>() {
-            return Err(ErrorKind::InvalidLength.into());
+            Err(TlvError::InvalidLength)?;
         }
 
         Ok(BigEndian::read_uint(&tag, tag_len) as usize)
     }
 
     /// Reads out TLV value's length
-    fn read_len(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<usize, Error> {
-        let mut len: usize = match iter.next() {
-            Some(x) => *x as usize,
-            None => return Err(ErrorKind::TruncatedTlv.into()),
-        };
+    fn read_len(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<usize> {
+        let mut len: usize = *iter.next()
+            .ok_or_else(|| TlvError::TruncatedTlv)? as usize;
 
         if len & 0x80 != 0 {
             let octet_num = len & 0x7F;
@@ -278,7 +274,7 @@ impl Tlv {
             let len_of_length = tlv_len.len();
 
             if len_of_length == 0 || len_of_length > mem::size_of::<usize>() {
-                return Err(ErrorKind::InvalidLength.into());
+                Err(TlvError::InvalidLength)?;
             }
 
             len = BigEndian::read_uint(&tlv_len, len_of_length) as usize;
@@ -286,7 +282,7 @@ impl Tlv {
 
         let remain = iter.len();
         if remain < len {
-            return Err(ErrorKind::TooShortBody(len, remain).into());
+            Err(TlvError::TooShortBody{ expected: len, found: remain })?;
         }
 
         Ok(len)
@@ -299,7 +295,7 @@ impl Tlv {
     }
 
     /// Initializes Tlv object iterator of Vec<u8>
-    fn from_iter(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tlv, Error> {
+    fn from_iter(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tlv> {
         let tag = Tlv::read_tag(iter)?;
         let len = Tlv::read_len(iter)?;
 
@@ -337,7 +333,7 @@ impl Tlv {
     /// assert_eq!(tlv.tag_len(), 0x01);
     /// assert_eq!(tlv.len(), 0x02);
     /// ```
-    pub fn from_vec(slice: &[u8]) -> Result<Tlv, Error> {
+    pub fn from_vec(slice: &[u8]) -> Result<Tlv> {
         let iter = &mut slice.iter();
         Tlv::from_iter(iter)
     }
