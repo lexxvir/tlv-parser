@@ -22,8 +22,8 @@
 //! ```
 //! use tlv_parser::tlv::*;
 //!
-//! let primitive_tlv = Tlv::new(0x01, Value::Nothing);
-//! let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv]));
+//! let primitive_tlv = Tlv::new(0x01, Value::Nothing).unwrap();
+//! let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv])).unwrap();
 //!
 //! assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
 //! ```
@@ -51,4 +51,12 @@ pub enum TlvError {
 
     #[fail(display = "Too short body: expected {}, found {}", expected, found)]
     TooShortBody { expected: usize, found: usize },
+
+    #[fail(display = "Tag number defines constructed TLV, but value is not Value::TlvList: {}",
+           tag_number)]
+    TlvListExpected { tag_number: usize },
+
+    #[fail(display = "Tag number defines primitive TLV, but value is not Value::Val: {}",
+           tag_number)]
+    ValExpected { tag_number: usize },
 }

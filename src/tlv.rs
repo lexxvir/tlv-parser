@@ -31,8 +31,8 @@ impl Tlv {
     /// ```
     /// # use tlv_parser::tlv::*;
     /// #
-    /// let primitive_tlv = Tlv::new(0x01, Value::Nothing);
-    /// # let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv]));
+    /// let primitive_tlv = Tlv::new(0x01, Value::Nothing).unwrap();
+    /// # let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv])).unwrap();
     /// #
     /// # assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
     /// ```
@@ -42,36 +42,30 @@ impl Tlv {
     /// ```
     /// # use tlv_parser::tlv::*;
     /// #
-    /// # let primitive_tlv = Tlv::new(0x01, Value::Nothing);
-    /// let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv]));
+    /// # let primitive_tlv = Tlv::new(0x01, Value::Nothing).unwrap();
+    /// let constructed_tlv = Tlv::new(0x21, Value::TlvList(vec![primitive_tlv])).unwrap();
     /// #
     /// # assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
     /// ```
-    ///
-    /// # Panics:
-    ///
-    /// Panics when tag number defines constructed tag but value is not TlvList
-    ///
-    /// Panics when tag number defines primitive tag but value is TlvList
-    pub fn new(tag: Tag, value: Value) -> Tlv {
+    pub fn new(tag: Tag, value: Value) -> Result<Tlv> {
         let tlv = Tlv {
             tag: tag,
             val: Value::Nothing,
         };
         match value {
             Value::TlvList(_) => if tlv.is_primitive() {
-                panic!("Primitive tag can't carry TlvList");
+                Err(TlvError::ValExpected { tag_number: tag })?;
             },
             Value::Val(_) => if !tlv.is_primitive() {
-                panic!("Constructed tag can't carry Val");
+                Err(TlvError::TlvListExpected { tag_number: tag })?;
             },
             _ => (),
         }
 
-        Tlv {
+        Ok(Tlv {
             tag: tag,
             val: value,
-        }
+        })
     }
 
     /// Returns tag number of TLV
@@ -85,7 +79,7 @@ impl Tlv {
     ///
     /// ```
     /// # use tlv_parser::tlv::*;
-    /// let tag_len = Tlv::new(0x01, Value::Nothing).tag_len();
+    /// let tag_len = Tlv::new(0x01, Value::Nothing).unwrap().tag_len();
     /// assert_eq!(tag_len, 1);
     /// ```
     pub fn tag_len(&self) -> usize {
@@ -109,7 +103,7 @@ impl Tlv {
     ///
     /// ```
     /// # use tlv_parser::tlv::*;
-    /// let tlv_len = Tlv::new(0x01, Value::Val(vec![0x02, 0x03])).len();
+    /// let tlv_len = Tlv::new(0x01, Value::Val(vec![0x02, 0x03])).unwrap().len();
     /// assert_eq!(tlv_len, 4);
     /// ```
     pub fn len(&self) -> usize {
@@ -134,8 +128,8 @@ impl Tlv {
     /// # use tlv_parser::tlv::*;
     /// let tlv = Tlv::new(0x21,
     ///     Value::TlvList(vec![
-    ///         Tlv::new( 0x01, Value::Val(vec![0xA1, 0xA2])),
-    ///         Tlv::new( 0x02, Value::Val(vec![0xB1, 0xB2]))]));
+    ///         Tlv::new( 0x01, Value::Val(vec![0xA1, 0xA2])).unwrap(),
+    ///         Tlv::new( 0x02, Value::Val(vec![0xB1, 0xB2])).unwrap()])).unwrap();
     /// assert_eq!(tlv.to_vec(), vec![0x21, 0x08, 0x01, 0x02, 0xA1, 0xA2, 0x02, 0x02, 0xB1, 0xB2]);
     /// ```
     pub fn to_vec(&self) -> Vec<u8> {
