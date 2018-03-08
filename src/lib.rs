@@ -43,13 +43,12 @@ type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Fail)]
 pub enum TlvError {
-    #[fail(display = "Too short input vector")] TruncatedTlv,
+    #[fail(display = "Too short input vector")]
+    TruncatedTlv,
 
-    #[fail(display = "Invalid length value")] InvalidLength,
+    #[fail(display = "Invalid length value")]
+    InvalidLength,
 
     #[fail(display = "Too short body: expected {}, found {}", expected, found)]
-    TooShortBody {
-        expected: usize,
-        found: usize,
-    },
+    TooShortBody { expected: usize, found: usize },
 }
