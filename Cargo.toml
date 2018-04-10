@@ -9,6 +9,7 @@ name = "tlv_parser"
 readme = "README.md"
 repository = "https://github.com/lexxvir/tlv-parser"
 version = "0.4.0"
+exclude = ["benches/*", "tests/*", "fuzz/*", "decode-tlv/*", "amex-cda-in.txt", ".*"]
 
 [dependencies.byteorder]
 version = "^1"
