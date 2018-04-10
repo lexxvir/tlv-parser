@@ -1,3 +1,4 @@
 /target
+/decode-tlv/target
 /Cargo.lock
 *.sw[po]

@@ -1,0 +1,10 @@
+[package]
+name = "decode-tlv"
+version = "0.1.0"
+authors = ["aarbuzov"]
+
+[dependencies]
+hex = "0.3.1"
+
+[dependencies.tlv_parser]
+path = "../"
