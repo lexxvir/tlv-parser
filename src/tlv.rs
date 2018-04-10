@@ -1,9 +1,10 @@
 use std::fmt;
-use std::mem;
 use std::fmt::Debug;
+use std::mem;
+use std::vec::Vec;
+use std::string::String;
 
-use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
-use hex::FromHex;
+use byteorder::{BigEndian, ByteOrder};
 
 use super::{Result, TlvError};
 
@@ -152,28 +153,16 @@ impl Tlv {
         out
     }
 
-    /// Parses string link "6F / A5" into Tags
-    fn get_path(path: &str) -> Tags {
-        path.chars()
+    /// Parses string like "6F / A5" into Tags
+    fn get_path(path: &str) -> Result<Tags> {
+        let tags: Result<Vec<_>> = path.chars()
             .filter(|&x| x.is_digit(16) || x == '/')
             .collect::<String>()
             .split('/')
-            .map(|x| {
-                FromHex::from_hex(x)
-                    .ok()
-                    .and_then(|x: Vec<u8>| {
-                        let x_len = x.len();
+            .map(|x| usize::from_str_radix(&x, 16).map_err(|_| TlvError::TagPathError))
+            .collect();
 
-                        if x_len > 0 && x_len <= mem::size_of::<usize>() {
-                            Some(BigEndian::read_uint(&x, x.len()) as usize)
-                        } else {
-                            // FIXME: return error
-                            Some(0)
-                        }
-                    })
-                    .unwrap_or(0)
-            })
-            .collect()
+        tags
     }
 
     /// Returns value of TLV
@@ -189,7 +178,10 @@ impl Tlv {
     /// }
     /// ```
     pub fn find_val(&self, path: &str) -> Option<&Value> {
-        let path = Tlv::get_path(path);
+        let path = match Tlv::get_path(path) {
+            Ok(x) => x,
+            _ => return None,
+        };
 
         if path.is_empty() {
             return None;
@@ -362,8 +354,8 @@ impl Value {
             return vec![len as u8];
         }
 
-        let mut out: Vec<u8> = vec![];
-        out.write_u64::<BigEndian>(len as u64).unwrap();
+        let mut out: Vec<u8> = vec![0; mem::size_of::<u64>()];
+        BigEndian::write_u64(&mut out, len as u64);
         out = out.iter().skip_while(|&x| *x == 0).cloned().collect();
 
         let bytes = out.len() as u8;

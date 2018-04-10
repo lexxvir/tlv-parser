@@ -1,3 +1,6 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), feature(alloc))]
+#![cfg_attr(not(feature = "std"), feature(collections))]
 #![feature(exact_size_is_empty)]
 
 //! A library to parse and emit [BER-TLV](https://en.wikipedia.org/wiki/X.690#BER_encoding) data.
@@ -28,18 +31,47 @@
 //! assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
 //! ```
 
-extern crate failure;
 #[macro_use]
-extern crate failure_derive;
+extern crate failure;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
+
+#[cfg(not(feature = "std"))]
+#[macro_use] extern crate collections;
 
 extern crate byteorder;
-extern crate hex;
 
 pub mod tlv;
 
-use failure::Error;
+#[cfg(not(feature = "std"))]
+pub(crate) mod std {
+    pub(crate) mod mem {
+        pub(crate) use core::mem::*;
+    }
 
-type Result<T> = std::result::Result<T, Error>;
+    pub(crate) mod fmt {
+        pub(crate) use core::fmt::*;
+    }
+
+    pub(crate) mod result {
+        pub(crate) use core::result::*;
+    }
+
+    pub(crate) mod option {
+        pub(crate) use core::option::*;
+    }
+
+    pub(crate) mod string {
+        pub(crate) use collections::string::*;
+    }
+
+    pub(crate) mod vec {
+        pub(crate) use collections::vec::*;
+    }
+}
+
+type Result<T> = std::result::Result<T, TlvError>;
 
 #[derive(Debug, Fail)]
 pub enum TlvError {
@@ -59,4 +91,7 @@ pub enum TlvError {
     #[fail(display = "Tag number defines primitive TLV, but value is not Value::Val: {}",
            tag_number)]
     ValExpected { tag_number: usize },
+
+    #[fail(display = "Provided 'tag-path' have error")]
+    TagPathError,
 }
