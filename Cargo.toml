@@ -1,6 +1,6 @@
 [package]
 authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
-categories = ["parser-implementations"]
+categories = ["parser-implementations", "no-std"]
 description = "BER-TLV parsing & emitting library"
 documentation = "https://lexxvir.github.io/tlv-parser"
 keywords = ["tlv"]
