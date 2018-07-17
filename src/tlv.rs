@@ -50,7 +50,7 @@ impl Tlv {
     /// ```
     pub fn new(tag: Tag, value: Value) -> Result<Tlv> {
         let tlv = Tlv {
-            tag: tag,
+            tag,
             val: Value::Nothing,
         };
         match value {
@@ -64,7 +64,7 @@ impl Tlv {
         }
 
         Ok(Tlv {
-            tag: tag,
+            tag,
             val: value,
         })
     }
@@ -289,7 +289,7 @@ impl Tlv {
         let val = &mut iter.take(len);
 
         let mut tlv = Tlv {
-            tag: tag,
+            tag,
             val: Value::Nothing,
         };
 
@@ -406,8 +406,7 @@ impl fmt::Display for Value {
         match *self {
             Value::TlvList(ref list) => {
                 for x in list.iter() {
-                    write!(f, "\n")?;
-                    x.fmt(f)?;
+                    writeln!(f, "{}", x)?;
                 }
                 Ok(())
             }
