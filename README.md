@@ -11,7 +11,7 @@ Library is early development stage and supports parsing from `&[u8]` and emittin
 
 *For now, it only builds on nightly.*
 
-*Crate is `no_std` compatible if you can use `core::collections`.*
+*Crate is `no_std` compatible if you can use `core::alloc`.*
 
 For usage see [`decode-tlv/src/main.rs`](https://github.com/lexxvir/tlv-parser/blob/master/decode-tlv/src/main.rs).
 
