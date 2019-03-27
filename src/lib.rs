@@ -34,10 +34,8 @@
 extern crate failure;
 
 #[cfg(not(feature = "std"))]
+#[macro_use]
 extern crate alloc;
-
-#[cfg(not(feature = "std"))]
-#[macro_use] extern crate alloc;
 
 extern crate byteorder;
 
