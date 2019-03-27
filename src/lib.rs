@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(feature = "std"), feature(alloc))]
-#![cfg_attr(not(feature = "std"), feature(collections))]
 #![feature(exact_size_is_empty)]
 
 //! A library to parse and emit [BER-TLV](https://en.wikipedia.org/wiki/X.690#BER_encoding) data.
@@ -38,7 +37,7 @@ extern crate failure;
 extern crate alloc;
 
 #[cfg(not(feature = "std"))]
-#[macro_use] extern crate collections;
+#[macro_use] extern crate alloc;
 
 extern crate byteorder;
 
@@ -63,11 +62,11 @@ pub(crate) mod std {
     }
 
     pub(crate) mod string {
-        pub(crate) use collections::string::*;
+        pub(crate) use alloc::string::*;
     }
 
     pub(crate) mod vec {
-        pub(crate) use collections::vec::*;
+        pub(crate) use alloc::vec::*;
     }
 }
 
