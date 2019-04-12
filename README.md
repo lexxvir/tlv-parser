@@ -9,9 +9,7 @@ Library for parsing BER-TLV
 
 Library is early development stage and supports parsing from `&[u8]` and emitting `Vec<u8>`.
 
-*For now, it only builds on nightly.*
-
-*Crate is `no_std` compatible if you can use `core::alloc`.*
+*This is `no_std` crate if you can use `core::alloc`. By the same reason it requries nightly compiler.*
 
 For usage see [`decode-tlv/src/main.rs`](https://github.com/lexxvir/tlv-parser/blob/master/decode-tlv/src/main.rs).
 
