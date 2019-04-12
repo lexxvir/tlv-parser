@@ -1,10 +1,7 @@
 use std::fmt;
 use std::fmt::Debug;
-use std::mem;
 use std::vec::Vec;
 use std::string::String;
-
-use byteorder::{BigEndian, ByteOrder};
 
 use super::{Result, TlvError};
 
@@ -134,12 +131,13 @@ impl Tlv {
     /// assert_eq!(tlv.to_vec(), vec![0x21, 0x08, 0x01, 0x02, 0xA1, 0xA2, 0x02, 0x02, 0xB1, 0xB2]);
     /// ```
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut out: Vec<u8> = vec![];
+        let mut out: Vec<u8> = (self.tag as u64)
+            .to_be_bytes()
+            .iter()
+            .skip_while(|&&x| x == 0)
+            .cloned()
+            .collect();
 
-        let mut tag = vec![0; self.tag_len()];
-        BigEndian::write_uint(&mut tag, self.tag as u64, self.tag_len());
-
-        out.extend_from_slice(&tag);
         out.append(&mut self.val.encode_len());
 
         match self.val {
@@ -224,44 +222,47 @@ impl Tlv {
 
     /// Reads out tag number
     fn read_tag(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tag> {
-        let mut tag: Vec<u8> = vec![];
+        let mut tag: usize;
 
         let first: u8 = iter.next().cloned().ok_or_else(|| TlvError::TruncatedTlv)?;
-
-        tag.push(first);
+        tag = first as usize;
 
         if first & 0x1F == 0x1F {
             // long form - find the end
             for x in &mut *iter {
-                tag.push(*x);
+                tag = tag.checked_shl(8)
+                    .ok_or_else(|| TlvError::InvalidTagNumber)?;
+
+                tag |= *x as usize;
+
                 if *x & 0x80 == 0 {
                     break;
                 }
             }
         }
 
-        let tag_len = tag.len();
-        if tag_len == 0 || tag_len > mem::size_of::<usize>() {
-            Err(TlvError::InvalidLength)?;
+        if tag == 0 {
+            return Err(TlvError::InvalidTagNumber);
         }
 
-        Ok(BigEndian::read_uint(&tag, tag_len) as usize)
+        Ok(tag)
     }
 
     /// Reads out TLV value's length
     fn read_len(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<usize> {
-        let mut len: usize = *iter.next().ok_or_else(|| TlvError::TruncatedTlv)? as usize;
+        let mut len: usize;
+        len = *iter.next().ok_or_else(|| TlvError::TruncatedTlv)? as usize;
 
         if len & 0x80 != 0 {
             let octet_num = len & 0x7F;
-            let tlv_len: Vec<u8> = iter.take(octet_num).cloned().collect();
-            let len_of_length = tlv_len.len();
 
-            if len_of_length == 0 || len_of_length > mem::size_of::<usize>() {
-                Err(TlvError::InvalidLength)?;
+            len = 0;
+            for x in iter.take(octet_num) {
+                len = len.checked_shl(8)
+                    .ok_or_else(|| TlvError::InvalidLength)?;
+
+                len |= *x as usize;
             }
-
-            len = BigEndian::read_uint(&tlv_len, len_of_length) as usize;
         }
 
         let remain = iter.len();
@@ -354,9 +355,12 @@ impl Value {
             return vec![len as u8];
         }
 
-        let mut out: Vec<u8> = vec![0; mem::size_of::<u64>()];
-        BigEndian::write_u64(&mut out, len as u64);
-        out = out.iter().skip_while(|&x| *x == 0).cloned().collect();
+        let mut out: Vec<u8> = len
+            .to_be_bytes()
+            .iter()
+            .skip_while(|&x| *x == 0)
+            .cloned()
+            .collect();
 
         let bytes = out.len() as u8;
         out.insert(0, 0x80 | bytes);

@@ -11,10 +11,6 @@ repository = "https://github.com/lexxvir/tlv-parser"
 version = "0.5.1"
 exclude = ["benches/*", "tests/*", "fuzz/*", "decode-tlv/*", "amex-cda-in.txt", ".*"]
 
-[dependencies.byteorder]
-version = "^1"
-default-features = false
-
 [dependencies.failure]
 version = "0.1.1"
 default-features = false

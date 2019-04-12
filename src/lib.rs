@@ -37,16 +37,10 @@ extern crate failure;
 #[macro_use]
 extern crate alloc;
 
-extern crate byteorder;
-
 pub mod tlv;
 
 #[cfg(not(feature = "std"))]
 pub(crate) mod std {
-    pub(crate) mod mem {
-        pub(crate) use core::mem::*;
-    }
-
     pub(crate) mod fmt {
         pub(crate) use core::fmt::*;
     }
@@ -77,6 +71,9 @@ pub enum TlvError {
 
     #[fail(display = "Invalid length value")]
     InvalidLength,
+
+    #[fail(display = "Invalid tag number")]
+    InvalidTagNumber,
 
     #[fail(display = "Too short body: expected {}, found {}", expected, found)]
     TooShortBody { expected: usize, found: usize },
