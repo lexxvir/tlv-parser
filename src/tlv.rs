@@ -301,7 +301,7 @@ impl Tlv {
 
         tlv.val = Value::TlvList(vec![]);
 
-        while !val.is_empty() {
+        while val.size_hint().0 != 0 {
             if let Value::TlvList(ref mut children) = tlv.val {
                 children.push(Tlv::from_iter(val)?);
             }
