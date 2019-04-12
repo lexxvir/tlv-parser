@@ -18,7 +18,3 @@ features = ["derive"]
 
 [dev-dependencies]
 quickcheck = "^0"
-
-[features]
-default = ["std"]
-std = []

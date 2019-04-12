@@ -1,7 +1,6 @@
-use std::fmt;
-use std::fmt::Debug;
-use std::vec::Vec;
-use std::string::String;
+use core::fmt::{self, Debug};
+use alloc::vec::Vec;
+use alloc::string::String;
 
 use super::{Result, TlvError};
 

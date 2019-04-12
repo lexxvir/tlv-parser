@@ -1,5 +1,5 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(not(feature = "std"), feature(alloc))]
+#![no_std]
+#![feature(alloc)]
 
 //! A library to parse and emit [BER-TLV](https://en.wikipedia.org/wiki/X.690#BER_encoding) data.
 //!
@@ -29,39 +29,15 @@
 //! assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
 //! ```
 
+extern crate core as std;
+#[macro_use]
+extern crate alloc;
 #[macro_use]
 extern crate failure;
 
-#[cfg(not(feature = "std"))]
-#[macro_use]
-extern crate alloc;
-
 pub mod tlv;
 
-#[cfg(not(feature = "std"))]
-pub(crate) mod std {
-    pub(crate) mod fmt {
-        pub(crate) use core::fmt::*;
-    }
-
-    pub(crate) mod result {
-        pub(crate) use core::result::*;
-    }
-
-    pub(crate) mod option {
-        pub(crate) use core::option::*;
-    }
-
-    pub(crate) mod string {
-        pub(crate) use alloc::string::*;
-    }
-
-    pub(crate) mod vec {
-        pub(crate) use alloc::vec::*;
-    }
-}
-
-type Result<T> = std::result::Result<T, TlvError>;
+type Result<T> = core::result::Result<T, TlvError>;
 
 #[derive(Debug, Fail)]
 pub enum TlvError {
