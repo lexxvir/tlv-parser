@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(alloc)]
 
 //! A library to parse and emit [BER-TLV](https://en.wikipedia.org/wiki/X.690#BER_encoding) data.
 //!
