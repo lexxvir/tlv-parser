@@ -220,7 +220,7 @@ impl Tlv {
     }
 
     /// Reads out tag number
-    fn read_tag(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tag> {
+    fn read_tag(iter: &mut dyn ExactSizeIterator<Item = &u8>) -> Result<Tag> {
         let mut tag: usize;
 
         let first: u8 = iter.next().cloned().ok_or_else(|| TlvError::TruncatedTlv)?;
@@ -248,7 +248,7 @@ impl Tlv {
     }
 
     /// Reads out TLV value's length
-    fn read_len(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<usize> {
+    fn read_len(iter: &mut dyn ExactSizeIterator<Item = &u8>) -> Result<usize> {
         let mut len: usize;
         len = *iter.next().ok_or_else(|| TlvError::TruncatedTlv)? as usize;
 
@@ -282,7 +282,7 @@ impl Tlv {
     }
 
     /// Initializes Tlv object iterator of Vec<u8>
-    fn from_iter(iter: &mut ExactSizeIterator<Item = &u8>) -> Result<Tlv> {
+    fn from_iter(iter: &mut dyn ExactSizeIterator<Item = &u8>) -> Result<Tlv> {
         let tag = Tlv::read_tag(iter)?;
         let len = Tlv::read_len(iter)?;
 
