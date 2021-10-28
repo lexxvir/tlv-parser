@@ -7,6 +7,16 @@ use super::{Result, TlvError};
 pub type Tag = usize;
 type Tags = Vec<Tag>;
 
+trait TagAsUSize {
+    fn as_usize(&self) -> usize;
+}
+
+impl TagAsUSize for Tag {
+    fn as_usize(&self) -> usize {
+        *self
+    }
+}
+
 pub enum Value {
     TlvList(Vec<Tlv>),
     Val(Vec<u8>),
@@ -494,6 +504,30 @@ mod tests {
         };
 
         assert_eq!(&tlv.to_vec()[0..5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
+    }
+
+    #[test]
+    fn tag_to_usize_test() {
+        use std::convert::TryFrom;
+
+        let t = Tag::try_from(12345678).unwrap();
+        assert_eq!(t.as_usize(), 12345678);
+        assert_eq!(t as usize, 12345678);
+    }
+
+    #[test]
+    fn tlv_tag_match_test() {
+        let t = Tlv {
+            tag: 0x03,
+            val: Value::Nothing,
+        };
+
+        let m = match t.tag() {
+            0x03 => true,
+            _ => false,
+        };
+
+        assert_eq!(m, true);
     }
 
     #[test]
