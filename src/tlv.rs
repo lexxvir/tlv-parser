@@ -369,6 +369,15 @@ impl Value {
         out.insert(0, 0x80 | bytes);
         out
     }
+
+    /// Returns value as byte array
+    pub fn to_vec(&self) -> Vec<u8> {
+        match *self {
+            Value::TlvList(ref list) => list.iter().map(|tlv| tlv.to_vec()).flatten().collect(),
+            Value::Val(ref v) => v.clone(),
+            Value::Nothing => Vec::new(),
+        }
+    }
 }
 
 impl fmt::Display for Tlv {
@@ -535,5 +544,33 @@ mod tests {
         assert_eq!(tlv2.tag_len(), 2);
         assert_eq!(tlv3.tag_len(), 3);
         assert_eq!(tlv4.tag_len(), 4);
+    }
+
+    #[test]
+    fn value_to_vec_test() {
+        assert_eq!(Value::Nothing.to_vec(), Vec::new());
+        assert_eq!(Value::Val(vec![1, 2, 3]).to_vec(), vec![1, 2, 3]);
+
+        assert_eq!(
+            Value::TlvList(vec![
+                Tlv {
+                    tag: 1,
+                    val: Value::Nothing,
+                },
+                Tlv {
+                    tag: 2,
+                    val: Value::Val(vec![1, 2, 3]),
+                },
+                Tlv {
+                    tag: 3,
+                    val: Value::TlvList(vec![Tlv {
+                        tag: 4,
+                        val: Value::Nothing,
+                    }]),
+                },
+            ])
+            .to_vec(),
+            vec![1, 0, 2, 3, 1, 2, 3, 3, 2, 4, 0]
+        );
     }
 }
