@@ -1,6 +1,6 @@
-use core::fmt::{self, Debug};
-use alloc::vec::Vec;
 use alloc::string::String;
+use alloc::vec::Vec;
+use core::fmt::{self, Debug};
 
 use super::{Result, TlvError};
 
@@ -50,19 +50,20 @@ impl Tlv {
             val: Value::Nothing,
         };
         match value {
-            Value::TlvList(_) => if tlv.is_primitive() {
-                Err(TlvError::ValExpected { tag_number: tag })?;
-            },
-            Value::Val(_) => if !tlv.is_primitive() {
-                Err(TlvError::TlvListExpected { tag_number: tag })?;
-            },
+            Value::TlvList(_) => {
+                if tlv.is_primitive() {
+                    Err(TlvError::ValExpected { tag_number: tag })?;
+                }
+            }
+            Value::Val(_) => {
+                if !tlv.is_primitive() {
+                    Err(TlvError::TlvListExpected { tag_number: tag })?;
+                }
+            }
             _ => (),
         }
 
-        Ok(Tlv {
-            tag,
-            val: value,
-        })
+        Ok(Tlv { tag, val: value })
     }
 
     /// Returns tag number of TLV
@@ -140,9 +141,11 @@ impl Tlv {
         out.append(&mut self.val.encode_len());
 
         match self.val {
-            Value::TlvList(ref list) => for x in list.iter() {
-                out.append(&mut x.to_vec());
-            },
+            Value::TlvList(ref list) => {
+                for x in list.iter() {
+                    out.append(&mut x.to_vec());
+                }
+            }
             Value::Val(ref v) => out.extend_from_slice(v),
             Value::Nothing => (),
         };
@@ -152,7 +155,8 @@ impl Tlv {
 
     /// Parses string like "6F / A5" into Tags
     fn get_path(path: &str) -> Result<Tags> {
-        let tags: Result<Vec<_>> = path.chars()
+        let tags: Result<Vec<_>> = path
+            .chars()
             .filter(|&x| x.is_digit(16) || x == '/')
             .collect::<String>()
             .split('/')
@@ -229,7 +233,8 @@ impl Tlv {
         if first & 0x1F == 0x1F {
             // long form - find the end
             for x in &mut *iter {
-                tag = tag.checked_shl(8)
+                tag = tag
+                    .checked_shl(8)
                     .ok_or_else(|| TlvError::InvalidTagNumber)?;
 
                 tag |= *x as usize;
@@ -257,8 +262,7 @@ impl Tlv {
 
             len = 0;
             for x in iter.take(octet_num) {
-                len = len.checked_shl(8)
-                    .ok_or_else(|| TlvError::InvalidLength)?;
+                len = len.checked_shl(8).ok_or_else(|| TlvError::InvalidLength)?;
 
                 len |= *x as usize;
             }
