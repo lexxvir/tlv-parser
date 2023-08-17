@@ -328,6 +328,27 @@ impl Tlv {
         let iter = &mut slice.iter();
         Tlv::from_iter(iter)
     }
+
+    /// Parses BER-TLV encoded list of tag numbers to vector of tag numbers
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// # use tlv_parser::tlv::*;
+    /// let tags = Tlv::parse_tag_list(&[0x50, 0x9F, 0x12, 0xDF, 0x81, 0x20]).unwrap();
+    /// assert_eq!(tags.len(), 3);
+    /// assert_eq!(tags[0], 0x50);
+    /// assert_eq!(tags[1], 0x9F12);
+    /// assert_eq!(tags[2], 0xDF8120);
+    /// ```
+    pub fn parse_tag_list(tag_list: &[u8]) -> Result<Vec<Tag>> {
+        let mut iter = tag_list.into_iter();
+        let mut tags = Vec::new();
+        while iter.len() != 0 {
+            tags.push(Self::read_tag(&mut iter)?);
+        }
+        Ok(tags)
+    }
 }
 
 impl Value {
