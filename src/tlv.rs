@@ -45,25 +45,34 @@ impl Tlv {
     /// # assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
     /// ```
     pub fn new(tag: Tag, value: Value) -> Result<Tlv> {
-        let tlv = Tlv {
-            tag,
-            val: Value::Nothing,
+        let mut tlv = Tlv { tag, val: value };
+        let is_tlv_primitive = tlv.is_primitive();
+        tlv.val = match tlv.val {
+            Value::TlvList(list) => {
+                if is_tlv_primitive {
+                    Value::Val(list.iter().flat_map(|t| t.to_vec()).collect())
+                } else {
+                    Value::TlvList(list)
+                }
+            }
+            Value::Val(val) => {
+                if !is_tlv_primitive {
+                    let mut list = Vec::new();
+                    let mut idx = 0;
+                    while idx < val.len() {
+                        let tlv = Tlv::from_vec(&val[idx..])?;
+                        idx += tlv.len();
+                        list.push(tlv);
+                    }
+                    Value::TlvList(list)
+                } else {
+                    Value::Val(val)
+                }
+            }
+            _ => Value::Nothing,
         };
-        match value {
-            Value::TlvList(_) => {
-                if tlv.is_primitive() {
-                    Err(TlvError::ValExpected { tag_number: tag })?;
-                }
-            }
-            Value::Val(_) => {
-                if !tlv.is_primitive() {
-                    Err(TlvError::TlvListExpected { tag_number: tag })?;
-                }
-            }
-            _ => (),
-        }
 
-        Ok(Tlv { tag, val: value })
+        Ok(tlv)
     }
 
     /// Returns tag number of TLV
@@ -490,6 +499,14 @@ mod tests {
         // TLV with four bytes tag number
         let input: Vec<u8> = vec![0x5f, 0xc8, 0x80, 0x01, 0x02, 0x01, 0x02];
         assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
+
+        // Constructed TLV
+        let input: Vec<u8> = vec![0xE1, 0x07, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02];
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
+
+        // Bad constructed TLV
+        let input: Vec<u8> = vec![0xE1, 0x07, 0x01, 0x01, 0x01, 0x02, 0x0F, 0x02, 0x02];
+        assert!(Tlv::from_vec(&input).is_err());
     }
 
     #[test]
@@ -593,5 +610,44 @@ mod tests {
             .to_vec(),
             vec![1, 0, 2, 3, 1, 2, 3, 3, 2, 4, 0]
         );
+    }
+
+    #[test]
+    fn constructed_from_val_test() {
+        assert_eq!(
+            Tlv::new(
+                0xE1,
+                Value::Val(vec![0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02])
+            )
+            .unwrap()
+            .to_vec(),
+            [0xE1, 0x07, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02]
+        );
+    }
+
+    #[test]
+    fn primitive_from_tlvlist_test() {
+        assert_eq!(
+            Tlv::new(
+                0x03,
+                Value::TlvList(vec![
+                    Tlv {
+                        tag: 0x01,
+                        val: Value::Val(vec![0x01]),
+                    },
+                    Tlv {
+                        tag: 0x02,
+                        val: Value::Val(vec![0x02, 0x02]),
+                    },
+                    Tlv {
+                        tag: 0x03,
+                        val: Value::Val(vec![0x03, 0x03, 0x03]),
+                    }
+                ])
+            )
+            .unwrap()
+            .to_vec(),
+            [0x03, 0x0C, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03]
+        )
     }
 }
