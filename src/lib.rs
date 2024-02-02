@@ -53,12 +53,6 @@ pub enum TlvError {
     TooShortBody { expected: usize, found: usize },
 
     #[fail(
-        display = "Tag number defines constructed TLV, but value is not Value::TlvList: {}",
-        tag_number
-    )]
-    TlvListExpected { tag_number: usize },
-
-    #[fail(
         display = "Tag number defines primitive TLV, but value is not Value::Val: {}",
         tag_number
     )]
