@@ -1,7 +1,7 @@
 [package]
 name = "decode-tlv"
 version = "0.1.0"
-authors = ["aarbuzov"]
+edition = "2021"
 
 [dependencies]
 hex = "0.3.1"

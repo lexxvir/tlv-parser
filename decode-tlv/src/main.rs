@@ -1,6 +1,3 @@
-extern crate hex;
-extern crate tlv_parser;
-
 use std::io::Read;
 use tlv_parser::tlv::{Tlv, Value};
 

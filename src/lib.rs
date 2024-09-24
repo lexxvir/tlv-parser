@@ -28,36 +28,42 @@
 //! assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
 //! ```
 
-extern crate core as std;
-#[macro_use]
 extern crate alloc;
-#[macro_use]
-extern crate failure;
 
 pub mod tlv;
 
 type Result<T> = core::result::Result<T, TlvError>;
 
-#[derive(Debug, Fail)]
+#[derive(Debug)]
 pub enum TlvError {
-    #[fail(display = "Too short input vector")]
     TruncatedTlv,
-
-    #[fail(display = "Invalid length value")]
     InvalidLength,
-
-    #[fail(display = "Invalid tag number")]
     InvalidTagNumber,
-
-    #[fail(display = "Too short body: expected {}, found {}", expected, found)]
     TooShortBody { expected: usize, found: usize },
-
-    #[fail(
-        display = "Tag number defines primitive TLV, but value is not Value::Val: {}",
-        tag_number
-    )]
     ValExpected { tag_number: usize },
-
-    #[fail(display = "Provided 'tag-path' have error")]
     TagPathError,
 }
+
+use core::fmt;
+
+impl fmt::Display for TlvError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use TlvError::*;
+
+        match self {
+            TruncatedTlv => write!(f, "Too short input vector"),
+            InvalidLength => writeln!(f, "Invalid length value"),
+            InvalidTagNumber => write!(f, "Invalid tag number"),
+            TooShortBody { expected, found } => {
+                write!(f, "Too short body: expected {expected}, found {found}")
+            }
+            ValExpected { tag_number } => write!(
+                f,
+                "Tag number defines primitive TLV, but value is not Value::Val: {tag_number}"
+            ),
+            TagPathError => write!(f, "Provided 'tag-path' has error"),
+        }
+    }
+}
+
+impl core::error::Error for TlvError {}
