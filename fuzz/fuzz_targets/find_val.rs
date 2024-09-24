@@ -1,9 +1,7 @@
 #![no_main]
-#[macro_use]
-extern crate libfuzzer_sys;
-extern crate tlv_parser;
 
-use tlv_parser::tlv::*;
+use libfuzzer_sys::fuzz_target;
+use tlv_parser::tlv::{Tlv, Value};
 
 fuzz_target!(|data: &[u8]| {
     let tlv = Tlv::new(0x6a, Value::Nothing).unwrap();
