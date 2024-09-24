@@ -1,4 +1,5 @@
 # tlv-parser
+![Build status](https://github.com/lexxvir/tlv-parser/actions/workflows/rust.yml/badge.svg)
 [![Latest Version](https://img.shields.io/crates/v/tlv_parser.svg)](https://crates.io/crates/tlv_parser)
 [![Docs](https://docs.rs/tlv_parser/badge.svg)](https://docs.rs/tlv_parser)
 
