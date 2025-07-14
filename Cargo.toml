@@ -2,7 +2,7 @@
 authors = ["Alexey Arbuzov <lexx.vir@gmail.com>"]
 categories = ["parser-implementations", "no-std"]
 description = "BER-TLV parsing & emitting library"
-documentation = "https://lexxvir.github.io/tlv-parser"
+documentation = "https://docs.rs/tlv_parser"
 keywords = ["tlv"]
 license = "MIT/Apache-2.0"
 name = "tlv_parser"
