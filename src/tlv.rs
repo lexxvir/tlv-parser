@@ -236,7 +236,14 @@ impl Tlv {
     fn read_tag(iter: &mut dyn ExactSizeIterator<Item = &u8>) -> Result<Tag> {
         let mut tag: usize;
 
-        let first: u8 = iter.next().cloned().ok_or_else(|| TlvError::TruncatedTlv)?;
+        // Per EMV 4.3 Book 3 Annex B1 (Coding of the Tag Field of BER-TLV Data Objects):
+        // > Before, between, or after TLV-coded data objects, '00' bytes without any meaning
+        // > may occur (for example, due to erased or modified TLV-coded data objects).
+        let first: u8 = iter
+            .skip_while(|&&next| next == 0)
+            .next()
+            .cloned()
+            .ok_or_else(|| TlvError::TruncatedTlv)?;
         tag = first as usize;
 
         if first & 0x1F == 0x1F {
@@ -507,6 +514,20 @@ mod tests {
         // Bad constructed TLV
         let input: Vec<u8> = vec![0xE1, 0x07, 0x01, 0x01, 0x01, 0x02, 0x0F, 0x02, 0x02];
         assert!(Tlv::from_vec(&input).is_err());
+
+        // TLV with leading zeroes
+        let input: Vec<u8> = vec![0x00, 0x00, 0x01, 0x02, 0x00, 0x00];
+        assert_eq!(
+            Tlv::from_vec(&input).unwrap().to_vec(),
+            vec![0x01, 0x02, 0x00, 0x00]
+        );
+
+        // Constructed TLV that contains two primitive TLVs with zeroes between them
+        let input: Vec<u8> = vec![0xE1, 0x08, 0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02];
+        assert_eq!(
+            Tlv::from_vec(&input).unwrap().to_vec(),
+            vec![0xE1, 0x06, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02]
+        );
     }
 
     #[test]
