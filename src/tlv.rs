@@ -16,6 +16,7 @@ pub enum Value {
 pub struct Tlv {
     tag: Tag,
     val: Value,
+    leading_zeroes: usize,
 }
 
 impl Tlv {
@@ -45,7 +46,7 @@ impl Tlv {
     /// # assert_eq!(constructed_tlv.to_vec(), vec![0x21, 0x02, 0x01, 0x00]);
     /// ```
     pub fn new(tag: Tag, value: Value) -> Result<Tlv> {
-        let mut tlv = Tlv { tag, val: value };
+        let mut tlv = Tlv { tag, val: value, leading_zeroes: 0 };
         let is_tlv_primitive = tlv.is_primitive();
         tlv.val = match tlv.val {
             Value::TlvList(list) => {
@@ -140,12 +141,14 @@ impl Tlv {
     /// assert_eq!(tlv.to_vec(), vec![0x21, 0x08, 0x01, 0x02, 0xA1, 0xA2, 0x02, 0x02, 0xB1, 0xB2]);
     /// ```
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut out: Vec<u8> = (self.tag as u64)
+        let mut out: Vec<u8> = vec![0; self.leading_zeroes];
+
+        out.append(&mut (self.tag as u64)
             .to_be_bytes()
             .iter()
             .skip_while(|&&x| x == 0)
             .cloned()
-            .collect();
+            .collect());
 
         out.append(&mut self.val.encode_len());
 
@@ -236,14 +239,7 @@ impl Tlv {
     fn read_tag(iter: &mut dyn ExactSizeIterator<Item = &u8>) -> Result<Tag> {
         let mut tag: usize;
 
-        // Per EMV 4.3 Book 3 Annex B1 (Coding of the Tag Field of BER-TLV Data Objects):
-        // > Before, between, or after TLV-coded data objects, '00' bytes without any meaning
-        // > may occur (for example, due to erased or modified TLV-coded data objects).
-        let first: u8 = iter
-            .skip_while(|&&next| next == 0)
-            .next()
-            .cloned()
-            .ok_or_else(|| TlvError::TruncatedTlv)?;
+        let first: u8 = iter.next().cloned().ok_or_else(|| TlvError::TruncatedTlv)?;
         tag = first as usize;
 
         if first & 0x1F == 0x1F {
@@ -251,7 +247,7 @@ impl Tlv {
             for x in &mut *iter {
                 tag = tag
                     .checked_shl(8)
-                    .ok_or_else(|| TlvError::InvalidTagNumber)?;
+                    .ok_or_else(|| TlvError::InvalidTagNumber { is_zero: false })?;
 
                 tag |= *x as usize;
 
@@ -262,7 +258,7 @@ impl Tlv {
         }
 
         if tag == 0 {
-            return Err(TlvError::InvalidTagNumber);
+            return Err(TlvError::InvalidTagNumber { is_zero: true });
         }
 
         Ok(tag)
@@ -303,7 +299,22 @@ impl Tlv {
 
     /// Initializes Tlv object iterator of Vec<u8>
     fn from_iter(iter: &mut dyn ExactSizeIterator<Item = &u8>) -> Result<Tlv> {
-        let tag = Tlv::read_tag(iter)?;
+        // Per EMV 4.3 Book 3 Annex B1 (Coding of the Tag Field of BER-TLV Data Objects):
+        // > Before, between, or after TLV-coded data objects, '00' bytes without any meaning
+        // > may occur (for example, due to erased or modified TLV-coded data objects).
+        let (tag, leading_zeroes) = {
+            let mut leading_zeroes: usize = 0;
+            let tag = loop {
+                match Tlv::read_tag(iter) {
+                    Ok(x) => break x,
+                    Err(TlvError::InvalidTagNumber { is_zero: true }) => {
+                        leading_zeroes += 1;
+                    }
+                    Err(x) => return Err(x),
+                }
+            };
+            (tag, leading_zeroes)
+        };
         let len = Tlv::read_len(iter)?;
 
         let val = &mut iter.take(len);
@@ -311,6 +322,7 @@ impl Tlv {
         let mut tlv = Tlv {
             tag,
             val: Value::Nothing,
+            leading_zeroes,
         };
 
         if tlv.is_primitive() {
@@ -519,14 +531,14 @@ mod tests {
         let input: Vec<u8> = vec![0x00, 0x00, 0x01, 0x02, 0x00, 0x00];
         assert_eq!(
             Tlv::from_vec(&input).unwrap().to_vec(),
-            vec![0x01, 0x02, 0x00, 0x00]
+            vec![0x00, 0x00, 0x01, 0x02, 0x00, 0x00]
         );
 
         // Constructed TLV that contains two primitive TLVs with zeroes between them
         let input: Vec<u8> = vec![0xE1, 0x08, 0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02];
         assert_eq!(
             Tlv::from_vec(&input).unwrap().to_vec(),
-            vec![0xE1, 0x06, 0x01, 0x01, 0x01, 0x02, 0x01, 0x02]
+            vec![0xE1, 0x06, 0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02]
         );
     }
 
@@ -535,6 +547,7 @@ mod tests {
         let tlv = Tlv {
             tag: 0x01,
             val: Value::Val(vec![0]),
+            leading_zeroes: 0,
         };
 
         assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00]);
@@ -542,6 +555,7 @@ mod tests {
         let tlv = Tlv {
             tag: 0x01,
             val: Value::Val(vec![0; 127]),
+            leading_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..3], [0x01, 0x7F, 0x00]);
@@ -549,6 +563,7 @@ mod tests {
         let tlv = Tlv {
             tag: 0x01,
             val: Value::Val(vec![0; 255]),
+            leading_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..4], [0x01, 0x81, 0xFF, 0x00]);
@@ -556,6 +571,7 @@ mod tests {
         let tlv = Tlv {
             tag: 0x02,
             val: Value::Val(vec![0; 256]),
+            leading_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..4], [0x02, 0x82, 0x01, 0x00]);
@@ -563,6 +579,7 @@ mod tests {
         let tlv = Tlv {
             tag: 0x03,
             val: Value::Val(vec![0; 0xffff01]),
+            leading_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
@@ -585,18 +602,22 @@ mod tests {
         let tlv1 = Tlv {
             tag: 0x03,
             val: Value::Nothing,
+            leading_zeroes: 0,
         };
         let tlv2 = Tlv {
             tag: 0x0303,
             val: Value::Nothing,
+            leading_zeroes: 0,
         };
         let tlv3 = Tlv {
             tag: 0x030303,
             val: Value::Nothing,
+            leading_zeroes: 0,
         };
         let tlv4 = Tlv {
             tag: 0x03030303,
             val: Value::Nothing,
+            leading_zeroes: 0,
         };
 
         assert_eq!(tlv1.tag_len(), 1);
@@ -615,17 +636,21 @@ mod tests {
                 Tlv {
                     tag: 1,
                     val: Value::Nothing,
+                    leading_zeroes: 0,
                 },
                 Tlv {
                     tag: 2,
                     val: Value::Val(vec![1, 2, 3]),
+                    leading_zeroes: 0,
                 },
                 Tlv {
                     tag: 3,
                     val: Value::TlvList(vec![Tlv {
                         tag: 4,
                         val: Value::Nothing,
+                        leading_zeroes: 0,
                     }]),
+                    leading_zeroes: 0,
                 },
             ])
             .to_vec(),
@@ -655,14 +680,17 @@ mod tests {
                     Tlv {
                         tag: 0x01,
                         val: Value::Val(vec![0x01]),
+                        leading_zeroes: 0,
                     },
                     Tlv {
                         tag: 0x02,
                         val: Value::Val(vec![0x02, 0x02]),
+                        leading_zeroes: 0,
                     },
                     Tlv {
                         tag: 0x03,
                         val: Value::Val(vec![0x03, 0x03, 0x03]),
+                        leading_zeroes: 0,
                     }
                 ])
             )

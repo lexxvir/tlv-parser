@@ -38,7 +38,7 @@ type Result<T> = core::result::Result<T, TlvError>;
 pub enum TlvError {
     TruncatedTlv,
     InvalidLength,
-    InvalidTagNumber,
+    InvalidTagNumber { is_zero: bool },
     TooShortBody { expected: usize, found: usize },
     ValExpected { tag_number: usize },
     TagPathError,
@@ -53,7 +53,7 @@ impl fmt::Display for TlvError {
         match self {
             TruncatedTlv => write!(f, "Too short input vector"),
             InvalidLength => writeln!(f, "Invalid length value"),
-            InvalidTagNumber => write!(f, "Invalid tag number"),
+            InvalidTagNumber { .. } => write!(f, "Invalid tag number"),
             TooShortBody { expected, found } => {
                 write!(f, "Too short body: expected {expected}, found {found}")
             }
