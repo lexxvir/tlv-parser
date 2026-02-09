@@ -11,13 +11,13 @@ fn quickcheck_from_vec() {
             Ok(tlv) => {
                 let restored_tlv = tlv.to_vec();
 
-                let truncacted_xs = xs
+                let truncated_xs = xs
                     .into_iter()
                     .skip_while(|&x| x == 0)
                     .take(restored_tlv.len())
                     .collect::<Vec<u8>>();
 
-                TestResult::from_bool(restored_tlv == truncacted_xs)
+                TestResult::from_bool(restored_tlv == truncated_xs)
             }
             Err(_) => TestResult::discard(),
         }
