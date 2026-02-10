@@ -172,7 +172,7 @@ impl Tlv {
         };
 
         // Add trailing zeroes after the value
-        out.extend_from_slice(&vec![0; self.trailing_zeroes]);
+        out.resize(out.len() + self.trailing_zeroes, 0);
 
         out
     }
