@@ -17,6 +17,7 @@ pub struct Tlv {
     tag: Tag,
     val: Value,
     leading_zeroes: usize,
+    trailing_zeroes: usize,
 }
 
 impl Tlv {
@@ -50,6 +51,7 @@ impl Tlv {
             tag,
             val: value,
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
         let is_tlv_primitive = tlv.is_primitive();
         tlv.val = match tlv.val {
@@ -63,10 +65,9 @@ impl Tlv {
             Value::Val(val) => {
                 if !is_tlv_primitive {
                     let mut list = Vec::new();
-                    let mut idx = 0;
-                    while idx < val.len() {
-                        let tlv = Tlv::from_vec(&val[idx..])?;
-                        idx += tlv.len();
+                    let mut iter = val.iter();
+                    while iter.len() != 0 {
+                        let tlv = Tlv::from_iter(&mut iter)?;
                         list.push(tlv);
                     }
                     Value::TlvList(list)
@@ -169,6 +170,9 @@ impl Tlv {
             Value::Val(ref v) => out.extend_from_slice(v),
             Value::Nothing => (),
         };
+
+        // Add trailing zeroes after the value
+        out.extend_from_slice(&vec![0; self.trailing_zeroes]);
 
         out
     }
@@ -327,6 +331,7 @@ impl Tlv {
             tag,
             val: Value::Nothing,
             leading_zeroes,
+            trailing_zeroes: 0,
         };
 
         if tlv.is_primitive() {
@@ -358,7 +363,21 @@ impl Tlv {
     /// ```
     pub fn from_vec(slice: &[u8]) -> Result<Tlv> {
         let iter = &mut slice.iter();
-        Tlv::from_iter(iter)
+        let mut tlv = Tlv::from_iter(iter)?;
+
+        // Count trailing zeroes per EMV spec
+        let mut trailing_zeroes = 0;
+        for &byte in iter {
+            if byte == 0 {
+                trailing_zeroes += 1;
+            } else {
+                // Non-zero byte after TLV is an error
+                return Err(TlvError::TruncatedTlv);
+            }
+        }
+        tlv.trailing_zeroes = trailing_zeroes;
+
+        Ok(tlv)
     }
 
     /// Parses BER-TLV encoded list of tag numbers to vector of tag numbers
@@ -541,6 +560,14 @@ mod tests {
         // Constructed TLV that contains two primitive TLVs with zeroes between them
         let input: Vec<u8> = vec![0xE1, 0x08, 0x01, 0x01, 0x01, 0x00, 0x00, 0x02, 0x01, 0x02];
         assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
+
+        // TLV with trailing zeroes
+        let input: Vec<u8> = vec![0x01, 0x02, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
+
+        // TLV with both leading and trailing zeroes
+        let input: Vec<u8> = vec![0x00, 0x00, 0x01, 0x02, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(Tlv::from_vec(&input).unwrap().to_vec(), input);
     }
 
     #[test]
@@ -549,6 +576,7 @@ mod tests {
             tag: 0x01,
             val: Value::Val(vec![0]),
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
 
         assert_eq!(tlv.to_vec(), vec![0x01, 0x01, 0x00]);
@@ -557,6 +585,7 @@ mod tests {
             tag: 0x01,
             val: Value::Val(vec![0; 127]),
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..3], [0x01, 0x7F, 0x00]);
@@ -565,6 +594,7 @@ mod tests {
             tag: 0x01,
             val: Value::Val(vec![0; 255]),
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..4], [0x01, 0x81, 0xFF, 0x00]);
@@ -573,6 +603,7 @@ mod tests {
             tag: 0x02,
             val: Value::Val(vec![0; 256]),
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..4], [0x02, 0x82, 0x01, 0x00]);
@@ -581,6 +612,7 @@ mod tests {
             tag: 0x03,
             val: Value::Val(vec![0; 0xffff01]),
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
 
         assert_eq!(&tlv.to_vec()[0..5], [0x03, 0x83, 0xFF, 0xFF, 0x01]);
@@ -604,21 +636,25 @@ mod tests {
             tag: 0x03,
             val: Value::Nothing,
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
         let tlv2 = Tlv {
             tag: 0x0303,
             val: Value::Nothing,
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
         let tlv3 = Tlv {
             tag: 0x030303,
             val: Value::Nothing,
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
         let tlv4 = Tlv {
             tag: 0x03030303,
             val: Value::Nothing,
             leading_zeroes: 0,
+            trailing_zeroes: 0,
         };
 
         assert_eq!(tlv1.tag_len(), 1);
@@ -638,11 +674,13 @@ mod tests {
                     tag: 1,
                     val: Value::Nothing,
                     leading_zeroes: 0,
+                    trailing_zeroes: 0,
                 },
                 Tlv {
                     tag: 2,
                     val: Value::Val(vec![1, 2, 3]),
                     leading_zeroes: 0,
+                    trailing_zeroes: 0,
                 },
                 Tlv {
                     tag: 3,
@@ -650,8 +688,10 @@ mod tests {
                         tag: 4,
                         val: Value::Nothing,
                         leading_zeroes: 0,
+                        trailing_zeroes: 0,
                     }]),
                     leading_zeroes: 0,
+                    trailing_zeroes: 0,
                 },
             ])
             .to_vec(),
@@ -682,16 +722,19 @@ mod tests {
                         tag: 0x01,
                         val: Value::Val(vec![0x01]),
                         leading_zeroes: 0,
+                        trailing_zeroes: 0,
                     },
                     Tlv {
                         tag: 0x02,
                         val: Value::Val(vec![0x02, 0x02]),
                         leading_zeroes: 0,
+                        trailing_zeroes: 0,
                     },
                     Tlv {
                         tag: 0x03,
                         val: Value::Val(vec![0x03, 0x03, 0x03]),
                         leading_zeroes: 0,
+                        trailing_zeroes: 0,
                     }
                 ])
             )
